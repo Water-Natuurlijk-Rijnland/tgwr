@@ -48,8 +48,14 @@ impl Database {
         let schema = include_str!("../../../migrations/001_initial_schema.sql");
 
         for statement in schema.split(';') {
-            let stmt = statement.trim();
-            if !stmt.is_empty() && !stmt.starts_with("--") {
+            // Strip comment lines before checking if statement is empty
+            let stmt: String = statement
+                .lines()
+                .filter(|line| !line.trim_start().starts_with("--"))
+                .collect::<Vec<_>>()
+                .join("\n");
+            let stmt = stmt.trim();
+            if !stmt.is_empty() {
                 if let Err(e) = conn.execute(stmt, []) {
                     let err_str = e.to_string();
                     if !err_str.contains("already exists") {
