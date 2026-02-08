@@ -1,0 +1,5 @@
+[package]
+name = "peilbeheer-frontend"
+version.workspace = true
+edition = "2024"
+description = "Dioxus frontend voor Peilbeheer HHVR (volgt in volgende iteratie)"
