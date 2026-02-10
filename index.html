@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TGWR - Dynamisch Peilbeheer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f0f4f8;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .infographic {
+            width: 1200px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+            color: white;
+            padding: 40px 50px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .header-badge {
+            position: absolute;
+            top: 40px;
+            right: 50px;
+            background: #e63946;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .main-content {
+            padding: 50px;
+        }
+
+        .paradox-box {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-left: 6px solid #ff9800;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+        }
+
+        .paradox-box h3 {
+            color: #e65100;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .paradox-box p {
+            color: #5d4037;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .perspectives {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .perspective {
+            border-radius: 16px;
+            padding: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .perspective::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+        }
+
+        .perspective.local {
+            background: #ffebee;
+        }
+        .perspective.local::before { background: #e53935; }
+
+        .perspective.regional {
+            background: #e3f2fd;
+        }
+        .perspective.regional::before { background: #1e88e5; }
+
+        .perspective.governance {
+            background: #f3e5f5;
+        }
+        .perspective.governance::before { background: #8e24aa; }
+
+        .perspective h4 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .perspective.local h4 { color: #c62828; }
+        .perspective.regional h4 { color: #1565c0; }
+        .perspective.governance h4 { color: #6a1b9a; }
+
+        .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .perspective.local .icon { background: #ffcdd2; }
+        .perspective.regional .icon { background: #bbdefb; }
+        .perspective.governance .icon { background: #e1bee7; }
+
+        .perspective ul {
+            list-style: none;
+        }
+
+        .perspective li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            font-size: 14px;
+            color: #424242;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .perspective li:last-child {
+            border-bottom: none;
+        }
+
+        .perspective li::before {
+            content: '•';
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .perspective.local li::before { color: #e53935; }
+        .perspective.regional li::before { color: #1e88e5; }
+        .perspective.governance li::before { color: #8e24aa; }
+
+        .comparison-table {
+            background: #fafafa;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .comparison-table h3 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1e3a5f;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #1e3a5f;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        th:first-child { border-radius: 10px 0 0 0; }
+        th:last-child { border-radius: 0 10px 0 0; }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 13px;
+            color: #424242;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        tr:nth-child(even) { background: #f5f5f5; }
+
+        .conflict-cell {
+            background: #ffebee !important;
+            font-weight: 600;
+            color: #c62828;
+        }
+
+        .arrow-box {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-radius: 16px;
+            padding: 30px;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .arrow-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .arrow-item h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #2e7d32;
+            margin-bottom: 8px;
+        }
+
+        .arrow-item p {
+            font-size: 20px;
+            font-weight: 800;
+            color: #1b5e20;
+        }
+
+        .arrow-divider {
+            font-size: 40px;
+            color: #4caf50;
+        }
+
+        .conclusion {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .conclusion h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .conclusion p {
+            font-size: 16px;
+            line-height: 1.6;
+            opacity: 0.95;
+        }
+
+        .footer {
+            background: #f5f5f5;
+            padding: 20px 50px;
+            text-align: center;
+            color: #757575;
+            font-size: 13px;
+        }
+
+        @media (max-width: 1250px) {
+            body { padding: 20px; }
+            .infographic { width: 100%; }
+            .header { padding: 30px; }
+            .main-content { padding: 30px; }
+            .perspectives { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="infographic">
+        <div class="header">
+            <span class="header-badge">ANALYSE 2026</span>
+            <h1>Dynamisch Peilbeheer</h1>
+            <p>De spanning tussen lokaal kostenperspectief en regionale waterambitie</p>
+        </div>
+
+        <div class="main-content">
+            <div class="paradox-box">
+                <h3>🔴 DE KERNPARADOX</h3>
+                <p>Locale bezwaren tegen dynamisch peilbeheer zijn gebaseerd op <strong>polderniveau-kosten</strong>, terwijl TGWR vereist dat je kijkt naar <strong>regionale baten</strong>. De €150.000 investering wordt "niet doelmatig" genoemd voor 6 hectare, maar deze redenering negeert het cumulatieve effect van alle polders op de regionale waterbuffer.</p>
+            </div>
+
+            <div class="perspectives">
+                <div class="perspective local">
+                    <h4><span class="icon">🏘️</span> LOKAAL (Peilbesluiten)</h4>
+                    <ul>
+                        <li>€150.000 per automatische stuw = "niet doelmatig"</li>
+                        <li>6 hectare = "te klein gebied"</li>
+                        <li>Meer sturing en capaciteit nodig</li>
+                        <li>Vast peil is "beter beheersbaar"</li>
+                        <li>Geen aanleiding bij grenswijziging</li>
+                    </ul>
+                </div>
+
+                <div class="perspective regional">
+                    <h4><span class="icon">🌊</span> REGIONAAL (TGWR)</h4>
+                    <ul>
+                        <li>15-30% waterbesparing doelstelling</li>
+                        <li>Buffercapaciteit via dynamisch peil</li>
+                        <li>Cumulatief effect van alle polders</li>
+                        <li>Geïntegreerde aanpak nodig</li>
+                        <li>Elke m³ telt voor waterzekerheid</li>
+                    </ul>
+                </div>
+
+                <div class="perspective governance">
+                    <h4><span class="icon">⚖️</span> BESTUURLIJK (Rekenkamer)</h4>
+                    <ul>
+                        <li>"Wie betaalt, wie profiteert?"</li>
+                        <li>Doelmatigheid onduidelijk</li>
+                        <li>Kostenverdeling vraagstuk</li>
+                        <li>Monitoring ontbreekt</li>
+                        <li>Governance niet geregeld</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="comparison-table">
+                <h3>📊 VERGELIJKING PER THEMA</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>THEMA</th>
+                            <th>LOKAAL BEZWAAR</th>
+                            <th>TGWR EIS</th>
+                            <th>REKENKAMER VRAAG</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Financiën</strong></td>
+                            <td class="conflict-cell">€150K is te duur</td>
+                            <td>Noodzakelijke investering</td>
+                            <td>Is dit doelmatig?</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Schaal</strong></td>
+                            <td class="conflict-cell">6 ha te klein</td>
+                            <td>Cumulatief effect telt</td>
+                            <td>Wat is de juiste maat?</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Organisatie</strong></td>
+                            <td>Te veel sturing nodig</td>
+                            <td>Primaire taak waterschap</td>
+                            <td>Wie draagt opslag?</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Kosten-Baten</strong></td>
+                            <td class="conflict-cell">Lokaal: kosten > baten</td>
+                            <td>Regionaal: baten > kosten</td>
+                            <td>Verdeling onduidelijk</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Perspectief</strong></td>
+                            <td>Polderniveau</td>
+                            <td>Systeemniveau</td>
+                            <td>Bestuurlijk niveau</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="arrow-box">
+                <div class="arrow-item">
+                    <h4>LOKALE KOSTEN</h4>
+                    <p>€150.000</p>
+                </div>
+                <div class="arrow-divider">→</div>
+                <div class="arrow-item">
+                    <h4>REGIONALE BAAT</h4>
+                    <p>Waterbuffer</p>
+                </div>
+                <div class="arrow-divider">→</div>
+                <div class="arrow-item">
+                    <h4>UITDAGING</h4>
+                    <p>Kostenverdeling</p>
+                </div>
+            </div>
+
+            <br>
+
+            <div class="conclusion">
+                <h3>💡 CONCLUSIE</h3>
+                <p>De bezwaren in de peilbesluiten reflecteren een lokaal kostenperspectief, terwijl TGWR een regionale kostendelingsvraag stelt die nog niet is opgelost. De Rekenkamer zou waarschijnlijk concluderen dat de €150.000 niet op polderniveau moet worden beoordeeld, maar als bijdrage aan regionale waterzekerheid.</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            Gebaseerd op peilbesluiten Rijnland 2025-2026, TGWR Impactanalyse en Rekenkameronderzoek
+        </div>
+    </div>
+</body>
+</html>
