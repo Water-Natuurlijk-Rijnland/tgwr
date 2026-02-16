@@ -10,6 +10,7 @@ use tower_http::services::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod arcgis_client;
+mod auth_service;
 mod config;
 mod db;
 mod energyzero_client;
@@ -18,6 +19,7 @@ mod hydronet_client;
 mod routes;
 mod scenario_service;
 
+use auth_service::AuthService;
 use db::Database;
 use scenario_service::ScenarioService;
 
@@ -124,7 +126,15 @@ async fn main() -> anyhow::Result<()> {
     // Initialize services
     let db_arc = Arc::new(db);
     let scenario_service = Arc::new(ScenarioService::new(db_arc.clone()));
+    let auth_service = Arc::new(AuthService::with_default_config(db_arc.clone())?);
+
+    // Ensure default admin user exists
+    if auth_service.ensure_default_admin()? {
+        tracing::warn!("Default admin user created - username: admin, password: admin123");
+    }
+
     tracing::info!("Scenario service initialized");
+    tracing::info!("Authentication service initialized");
 
     // Build API router
     let api = Router::new()
@@ -144,6 +154,17 @@ async fn main() -> anyhow::Result<()> {
         .route("/peilgebieden/sync", post(routes::peilgebieden::sync_peilgebieden))
         .route("/energieprijzen", get(routes::optimalisatie::get_energieprijzen))
         .route("/optimalisatie", post(routes::optimalisatie::run_optimalisatie))
+        // Authentication routes
+        .route("/auth/login", post(routes::auth::login))
+        .route("/auth/logout", post(routes::auth::logout))
+        .route("/auth/me", get(routes::auth::get_current_user))
+        .route("/auth/users", get(routes::auth::list_users))
+        .route("/auth/users", post(routes::auth::create_user))
+        .route("/auth/users/:id", get(routes::auth::get_user))
+        .route("/auth/users/:id", post(routes::auth::update_user))
+        .route("/auth/users/:id/delete", post(routes::auth::delete_user))
+        .route("/auth/users/:id/password", post(routes::auth::change_password))
+        .route("/auth/users/:id/permissions", get(routes::auth::get_user_permissions))
         // Scenario management routes
         .route("/scenarios", get(routes::scenarios::list_scenarios))
         .route("/scenarios", post(routes::scenarios::create_scenario))
@@ -166,7 +187,8 @@ async fn main() -> anyhow::Result<()> {
         )
         .layer(Extension(db_arc))
         .layer(Extension(Arc::new(config.clone())))
-        .layer(Extension(scenario_service));
+        .layer(Extension(scenario_service))
+        .layer(Extension(auth_service));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);

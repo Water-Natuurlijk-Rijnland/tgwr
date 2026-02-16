@@ -1,4 +1,5 @@
 pub mod asset;
+pub mod auth;
 pub mod dhydro;
 pub mod energie;
 pub mod gemaal;
@@ -9,6 +10,10 @@ pub mod sliding_window;
 pub mod waterbalans;
 
 pub use asset::AssetRegistratie;
+pub use auth::{
+    ChangePasswordRequest, Claims, CreateUserRequest, LoginRequest, LoginResponse,
+    Permission, Role, UpdateUserRequest, User, UserInfo,
+};
 pub use dhydro::{
     DhydroClient, DhydroConfig, DhydroError, DhydroModel, OAuthToken, Scenario,
     ScenarioParameters, ScenarioResult, ScenarioResults, ScenarioStatus,

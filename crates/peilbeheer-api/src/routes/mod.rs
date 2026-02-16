@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod assets;
 pub mod dhydro;
 pub mod gemalen;
