@@ -1,4 +1,5 @@
 pub mod asset;
+pub mod dhydro;
 pub mod energie;
 pub mod gemaal;
 pub mod hydronet;
@@ -7,6 +8,12 @@ pub mod sliding_window;
 pub mod waterbalans;
 
 pub use asset::AssetRegistratie;
+pub use dhydro::{
+    DhydroClient, DhydroConfig, DhydroError, DhydroModel, OAuthToken, Scenario,
+    ScenarioParameters, ScenarioResult, ScenarioResults, ScenarioStatus,
+    ScenarioSummary, TimeSeries, TimeSeriesAggregation, TimeSeriesPoint,
+    TimeSeriesQuery,
+};
 pub use energie::{
     OptimalisatieParams, OptimalisatieResultaat, OptimalisatieUurResultaat,
     SimulatieStapUitgebreid, UurPrijs,

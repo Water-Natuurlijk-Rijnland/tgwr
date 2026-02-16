@@ -1,4 +1,5 @@
 pub mod assets;
+pub mod dhydro;
 pub mod gemalen;
 pub mod health;
 pub mod optimalisatie;

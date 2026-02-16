@@ -1,6 +1,7 @@
 use std::env;
 
 use serde::{Deserialize, Serialize};
+use peilbeheer_core::DhydroConfig;
 
 /// Configuratie voor een ArcGIS-laag.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,6 +26,7 @@ pub struct Config {
     pub peilgebieden_geojson_path: String,
     pub peilgebieden_arcgis_service: String,
     pub peilgebieden_arcgis_layer_id: u32,
+    pub dhydro: DhydroConfig,
 }
 
 impl Config {
@@ -33,6 +35,23 @@ impl Config {
         let arcgis_layers = match env::var("ARCGIS_LAYERS") {
             Ok(json) => serde_json::from_str(&json)?,
             Err(_) => default_arcgis_layers(),
+        };
+
+        let dhydro = DhydroConfig {
+            base_url: env::var("DHYDRO_BASE_URL")
+                .unwrap_or_else(|_| "https://api.dhydro.nl".to_string()),
+            client_id: env::var("DHYDRO_CLIENT_ID")
+                .unwrap_or_else(|_| "".to_string()),
+            client_secret: env::var("DHYDRO_CLIENT_SECRET")
+                .unwrap_or_else(|_| "".to_string()),
+            token_url: env::var("DHYDRO_TOKEN_URL")
+                .unwrap_or_else(|_| "https://api.dhydro.nl/oauth/token".to_string()),
+            scope: env::var("DHYDRO_SCOPE")
+                .unwrap_or_else(|_| "models timeseries scenarios results".to_string()),
+            timeout_secs: env::var("DHYDRO_TIMEOUT")
+                .unwrap_or_else(|_| "30".to_string())
+                .parse()
+                .unwrap_or(30),
         };
 
         Ok(Self {
@@ -54,6 +73,7 @@ impl Config {
                 .unwrap_or_else(|_| "0".to_string())
                 .parse()
                 .unwrap_or(0),
+            dhydro,
         })
     }
 }
