@@ -48,3 +48,6 @@ sha2 = "0.10"
 tokio-tungstenite.workspace = true
 futures-util.workspace = true
 uuid.workspace = true
+
+# URL encoding
+urlencoding.workspace = true

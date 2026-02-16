@@ -5,6 +5,7 @@ use axum::{
     routing::{delete, get, post, put},
     Router,
 };
+use peilbeheer_core::FewsConfig;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -15,6 +16,7 @@ mod config;
 mod db;
 mod energyzero_client;
 mod error;
+mod fews_client;
 mod hydronet_client;
 mod routes;
 mod scenario_service;
@@ -22,6 +24,7 @@ mod websocket_service;
 
 use auth_service::AuthService;
 use db::Database;
+use fews_client::{FewsClient, FewsSyncService};
 use scenario_service::ScenarioService;
 use websocket_service::WebSocketServer;
 
@@ -131,6 +134,19 @@ async fn main() -> anyhow::Result<()> {
     let auth_service = Arc::new(AuthService::with_default_config(db_arc.clone())?);
     let ws_server = Arc::new(WebSocketServer::new());
 
+    // Initialize Fews client (if configured)
+    let fews_config = FewsConfig {
+        base_url: std::env::var("FEWS_BASE_URL").unwrap_or_else(|_| "https://fews.example.com/PI-rest".to_string()),
+        filter_id: std::env::var("FEWS_FILTER_ID").unwrap_or_else(|_| "WatershedFilter".to_string()),
+        api_key: std::env::var("FEWS_API_KEY").ok(),
+        timeout_secs: std::env::var("FEWS_TIMEOUT")
+            .unwrap_or_else(|_| "30".to_string())
+            .parse()
+            .unwrap_or(30),
+    };
+    let fews_client = Arc::new(FewsClient::new(fews_config.clone()));
+    let fews_sync_service = Arc::new(FewsSyncService::new(fews_client.clone(), vec![]));
+
     // Ensure default admin user exists
     if auth_service.ensure_default_admin()? {
         tracing::warn!("Default admin user created - username: admin, password: admin123");
@@ -139,6 +155,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Scenario service initialized");
     tracing::info!("Authentication service initialized");
     tracing::info!("WebSocket server initialized (ID: {})", ws_server.server_id());
+    tracing::info!("Fews client initialized (filter: {})", fews_config.filter_id);
 
     // Build API router
     let api = Router::new()
@@ -180,7 +197,16 @@ async fn main() -> anyhow::Result<()> {
         .route("/scenarios/{id}/clone", post(routes::scenarios::clone_scenario))
         // WebSocket routes
         .route("/ws", get(routes::websocket::websocket_handler))
-        .route("/ws/status", get(routes::websocket::ws_status));
+        .route("/ws/status", get(routes::websocket::ws_status))
+        // Fews integration routes
+        .route("/fews/timeseries", get(routes::fews::get_time_series))
+        .route("/fews/locations", get(routes::fews::get_locations))
+        .route("/fews/parameters", get(routes::fews::get_parameters))
+        .route("/fews/modules", get(routes::fews::get_module_instances))
+        .route("/fews/sync", post(routes::fews::sync_fews))
+        .route("/fews/ping", get(routes::fews::ping_fews))
+        .route("/fews/status", get(routes::fews::fews_status))
+        .route("/fews/config", get(routes::fews::get_sync_configs));
 
     // Combine API with static file serving
     let app = Router::new()
@@ -196,7 +222,9 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(Arc::new(config.clone())))
         .layer(Extension(scenario_service))
         .layer(Extension(auth_service))
-        .layer(Extension(ws_server));
+        .layer(Extension(ws_server))
+        .layer(Extension(fews_client))
+        .layer(Extension(fews_sync_service));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);

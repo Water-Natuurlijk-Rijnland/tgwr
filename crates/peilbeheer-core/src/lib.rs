@@ -2,6 +2,7 @@ pub mod asset;
 pub mod auth;
 pub mod dhydro;
 pub mod energie;
+pub mod fews;
 pub mod gemaal;
 pub mod hydronet;
 pub mod peilgebied;
@@ -37,5 +38,11 @@ pub use sliding_window::{SlidingWindowProcessor, WindowStats};
 pub use websocket::{
     AlertSeverity, SubscribeRequest, TimeSeriesPoint as WsTimeSeriesPoint, UnsubscribeRequest,
     WsMessage,
+};
+pub use fews::{
+    FewsConfig, FewsLocation, FewsModuleInstance, FewsParameter,
+    FewsSyncConfig, FewsSyncRequest, FewsSyncResult, FewsTimeSeries, FewsTimeSeriesHeader,
+    FewsTimeSeriesId, FewsTimeSeriesPoint, FewsTimeSeriesQuery, FewsTimeSeriesResponse,
+    FewsTimeStep, FewsValueType,
 };
 pub use waterbalans::{SimulatieParams, SimulatieStap, WaterBalance};

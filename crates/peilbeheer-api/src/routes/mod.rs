@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod assets;
 pub mod dhydro;
+pub mod fews;
 pub mod gemalen;
 pub mod health;
 pub mod optimalisatie;
