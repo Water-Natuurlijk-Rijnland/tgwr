@@ -222,7 +222,7 @@ impl AlertService {
                 &metadata_json,
                 &format_datetime(now),
                 &format_datetime(now),
-                &creator_id,
+                &creator_id as &dyn duckdb::ToSql,
             ],
         )?;
 

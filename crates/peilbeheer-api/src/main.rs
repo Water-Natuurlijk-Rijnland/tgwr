@@ -21,6 +21,7 @@ mod fews_client;
 mod hydronet_client;
 mod routes;
 mod scenario_service;
+mod timeseries_service;
 mod websocket_service;
 
 use alert_service::AlertService;
@@ -28,6 +29,7 @@ use auth_service::AuthService;
 use db::Database;
 use fews_client::{FewsClient, FewsSyncService};
 use scenario_service::ScenarioService;
+use timeseries_service::TimeSeriesService;
 use websocket_service::WebSocketServer;
 
 #[tokio::main]
@@ -137,6 +139,7 @@ async fn main() -> anyhow::Result<()> {
     let ws_server = Arc::new(WebSocketServer::new());
     let alert_service = Arc::new(AlertService::new(db_arc.clone(), ws_server.clone()));
     alert_service.initialize().await?;
+    let timeseries_service = Arc::new(TimeSeriesService::new(db_arc.clone()));
 
     // Initialize Fews client (if configured)
     let fews_config = FewsConfig {
@@ -160,6 +163,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Authentication service initialized");
     tracing::info!("WebSocket server initialized (ID: {})", ws_server.server_id());
     tracing::info!("Alert service initialized");
+    tracing::info!("Time series service initialized");
     tracing::info!("Fews client initialized (filter: {})", fews_config.filter_id);
 
     // Build API router
@@ -226,7 +230,15 @@ async fn main() -> anyhow::Result<()> {
         .route("/alerts/stats", get(routes::alerts::get_alert_stats))
         .route("/alerts/{id}", get(routes::alerts::get_alert))
         .route("/alerts/{id}/acknowledge", post(routes::alerts::acknowledge_alert))
-        .route("/alerts/{id}/resolve", post(routes::alerts::resolve_alert));
+        .route("/alerts/{id}/resolve", post(routes::alerts::resolve_alert))
+        // Time series routes
+        .route("/timeseries", get(routes::timeseries::list_series))
+        .route("/timeseries/query", get(routes::timeseries::query_timeseries))
+        .route("/timeseries/write", post(routes::timeseries::write_timeseries))
+        .route("/timeseries/register", post(routes::timeseries::register_series))
+        .route("/timeseries/{location_id}/{parameter}", get(routes::timeseries::get_series_metadata))
+        .route("/timeseries/levels", get(routes::timeseries::get_aggregation_levels))
+        .route("/timeseries/functions", get(routes::timeseries::get_aggregation_functions));
 
     // Combine API with static file serving
     let app = Router::new()
@@ -245,7 +257,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(ws_server))
         .layer(Extension(fews_client))
         .layer(Extension(fews_sync_service))
-        .layer(Extension(alert_service));
+        .layer(Extension(alert_service))
+        .layer(Extension(timeseries_service));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);

@@ -9,6 +9,7 @@ pub mod hydronet;
 pub mod peilgebied;
 pub mod scenario;
 pub mod sliding_window;
+pub mod timeseries;
 pub mod waterbalans;
 pub mod websocket;
 
@@ -42,7 +43,8 @@ pub use websocket::{
 };
 pub use alert::{
     AcknowledgeAlertRequest, Alert, AlertCategory, AlertCondition, AlertQuery, AlertRule,
-    AlertSeverity, AlertStats, AlertStatus, AlertValue, AggregationFunction, ComparisonOperator,
+    AlertSeverity, AlertStats, AlertStatus, AlertValue,
+    AggregationFunction as AlertAggregationFunction, ComparisonOperator,
     ConditionLogic, ConditionResult, CreateAlertRuleRequest, EvaluationContext,
     NotificationChannel, RuleEvaluationResult, RuleId as AlertRuleId, RuleTriggerCount,
     TimeSeriesValue, UpdateAlertRuleRequest,
@@ -54,3 +56,9 @@ pub use fews::{
     FewsTimeStep, FewsValueType,
 };
 pub use waterbalans::{SimulatieParams, SimulatieStap, WaterBalance};
+pub use timeseries::{
+    AggregatedSeries, AggregationFunction as TsAggregationFunction, AggregationLevel,
+    AggregationMetadata, DownsampleConfig, FillMethod, GapAnalysisResult, QualityFlag,
+    TimeSeriesCatalogEntry, TimeSeriesDataPoint, TimeSeriesId, TimeSeriesMetadata,
+    TimeSeriesQuery as TsQuery, TimeSeriesSourceType, TimeSeriesWriteBatch, TimeSeriesWriteResult,
+};

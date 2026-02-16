@@ -63,6 +63,7 @@ impl Database {
             include_str!("../../../migrations/005_scenario_results.sql"),
             include_str!("../../../migrations/006_users.sql"),
             include_str!("../../../migrations/007_alerts.sql"),
+            include_str!("../../../migrations/008_timeseries.sql"),
         ];
 
         for schema in migrations {

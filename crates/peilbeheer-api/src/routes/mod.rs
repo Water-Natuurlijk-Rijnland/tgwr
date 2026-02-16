@@ -10,4 +10,5 @@ pub mod peilgebieden;
 pub mod scenarios;
 pub mod simulatie;
 pub mod status;
+pub mod timeseries;
 pub mod websocket;
