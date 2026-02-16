@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     extract::Extension,
-    routing::{get, post},
+    routing::{delete, get, post, put},
     Router,
 };
 use tower_http::cors::{Any, CorsLayer};
@@ -16,8 +16,10 @@ mod energyzero_client;
 mod error;
 mod hydronet_client;
 mod routes;
+mod scenario_service;
 
 use db::Database;
+use scenario_service::ScenarioService;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -119,6 +121,11 @@ async fn main() -> anyhow::Result<()> {
         tracing::info!("Peilgebied tabel bevat {peilgebied_count} records");
     }
 
+    // Initialize services
+    let db_arc = Arc::new(db);
+    let scenario_service = Arc::new(ScenarioService::new(db_arc.clone()));
+    tracing::info!("Scenario service initialized");
+
     // Build API router
     let api = Router::new()
         .route("/health", get(routes::health::health_check))
@@ -136,7 +143,16 @@ async fn main() -> anyhow::Result<()> {
         .route("/peilgebieden/mapping", get(routes::peilgebieden::get_peilgebied_mapping))
         .route("/peilgebieden/sync", post(routes::peilgebieden::sync_peilgebieden))
         .route("/energieprijzen", get(routes::optimalisatie::get_energieprijzen))
-        .route("/optimalisatie", post(routes::optimalisatie::run_optimalisatie));
+        .route("/optimalisatie", post(routes::optimalisatie::run_optimalisatie))
+        // Scenario management routes
+        .route("/scenarios", get(routes::scenarios::list_scenarios))
+        .route("/scenarios", post(routes::scenarios::create_scenario))
+        .route("/scenarios/{id}", get(routes::scenarios::get_scenario))
+        .route("/scenarios/{id}", put(routes::scenarios::update_scenario))
+        .route("/scenarios/{id}", delete(routes::scenarios::delete_scenario))
+        .route("/scenarios/{id}/execute", post(routes::scenarios::execute_scenario))
+        .route("/scenarios/{id}/results", get(routes::scenarios::get_scenario_results))
+        .route("/scenarios/{id}/clone", post(routes::scenarios::clone_scenario));
 
     // Combine API with static file serving
     let app = Router::new()
@@ -148,8 +164,9 @@ async fn main() -> anyhow::Result<()> {
                 .allow_methods(Any)
                 .allow_headers(Any),
         )
-        .layer(Extension(Arc::new(db)))
-        .layer(Extension(Arc::new(config.clone())));
+        .layer(Extension(db_arc))
+        .layer(Extension(Arc::new(config.clone())))
+        .layer(Extension(scenario_service));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);

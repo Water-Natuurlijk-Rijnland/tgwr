@@ -655,4 +655,50 @@ impl Database {
 
         Ok(mapping)
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Scenario Management helper methods
+    // ═══════════════════════════════════════════════════════════════
+
+    /// Execute a SQL statement with parameters.
+    pub fn execute(&self, sql: &str, params: &[&dyn duckdb::ToSql]) -> anyhow::Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(sql, params)?;
+        Ok(())
+    }
+
+    /// Query and map rows using a closure.
+    pub fn query<T, F>(
+        &self,
+        sql: &str,
+        params: &[&dyn duckdb::ToSql],
+        mapper: F,
+    ) -> anyhow::Result<Vec<T>>
+    where
+        F: FnMut(&duckdb::Row<'_>) -> duckdb::Result<T>,
+    {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(sql)?;
+        let mut rows = stmt.query_map(params.as_ref(), mapper)?;
+        let mut results = Vec::new();
+        for row in rows {
+            results.push(row?);
+        }
+        Ok(results)
+    }
+
+    /// Query a single row.
+    pub fn query_row<T, F>(
+        &self,
+        sql: &str,
+        params: &[&dyn duckdb::ToSql],
+        mapper: F,
+    ) -> anyhow::Result<T>
+    where
+        F: FnOnce(&duckdb::Row<'_>) -> duckdb::Result<T>,
+    {
+        let conn = self.conn.lock().unwrap();
+        let result = conn.query_row(sql, params, mapper)?;
+        Ok(result)
+    }
 }
