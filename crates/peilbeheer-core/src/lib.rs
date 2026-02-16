@@ -26,8 +26,9 @@ pub use dhydro::{
     TimeSeriesQuery,
 };
 pub use energie::{
-    OptimalisatieParams, OptimalisatieResultaat, OptimalisatieUurResultaat,
-    SimulatieStapUitgebreid, UurPrijs,
+    JobStatus, OptimizationJob, OptimalisatieParams, OptimalisatieResultaat,
+    OptimalisatieUurResultaat, PriceForecast, PriceSource, PumpSchedule, QueueStats,
+    SimulatieStapUitgebreid, UurPrijs, HourlyPrice,
 };
 pub use gemaal::{Gemaal, GemaalSnapshot, GemaalStatus, GemaalTrends, StationSummary, TrendDirection, TrendInfo, TrendStrength};
 pub use hydronet::{DataPoint, HydronetSeries};

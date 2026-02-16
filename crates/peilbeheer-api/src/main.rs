@@ -20,6 +20,7 @@ mod energyzero_client;
 mod error;
 mod fews_client;
 mod hydronet_client;
+mod optimization_service;
 mod routes;
 mod scenario_service;
 mod timeseries_service;
@@ -30,6 +31,7 @@ use auth_service::AuthService;
 use dashboard_service::DashboardService;
 use db::Database;
 use fews_client::{FewsClient, FewsSyncService};
+use optimization_service::OptimizationService;
 use scenario_service::ScenarioService;
 use timeseries_service::TimeSeriesService;
 use websocket_service::WebSocketServer;
@@ -143,6 +145,7 @@ async fn main() -> anyhow::Result<()> {
     alert_service.initialize().await?;
     let timeseries_service = Arc::new(TimeSeriesService::new(db_arc.clone()));
     let dashboard_service = Arc::new(DashboardService::new(db_arc.clone()));
+    let optimization_service = Arc::new(OptimizationService::new(db_arc.clone(), ws_server.clone()));
 
     // Initialize Fews client (if configured)
     let fews_config = FewsConfig {
@@ -168,6 +171,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Alert service initialized");
     tracing::info!("Time series service initialized");
     tracing::info!("Dashboard service initialized");
+    tracing::info!("Optimization service initialized");
     tracing::info!("Fews client initialized (filter: {})", fews_config.filter_id);
 
     // Build API router
@@ -188,6 +192,13 @@ async fn main() -> anyhow::Result<()> {
         .route("/peilgebieden/sync", post(routes::peilgebieden::sync_peilgebieden))
         .route("/energieprijzen", get(routes::optimalisatie::get_energieprijzen))
         .route("/optimalisatie", post(routes::optimalisatie::run_optimalisatie))
+        // Optimization job queue routes
+        .route("/optimization/jobs", get(routes::optimalisatie::list_jobs))
+        .route("/optimization/jobs", post(routes::optimalisatie::create_job))
+        .route("/optimization/jobs/{id}", get(routes::optimalisatie::get_job))
+        .route("/optimization/jobs/{id}/cancel", post(routes::optimalisatie::cancel_job))
+        .route("/optimization/queue/stats", get(routes::optimalisatie::get_queue_stats))
+        .route("/optimization/forecast", get(routes::optimalisatie::get_price_forecast))
         // Authentication routes
         .route("/auth/login", post(routes::auth::login))
         .route("/auth/logout", post(routes::auth::logout))
@@ -272,7 +283,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(fews_sync_service))
         .layer(Extension(alert_service))
         .layer(Extension(timeseries_service))
-        .layer(Extension(dashboard_service));
+        .layer(Extension(dashboard_service))
+        .layer(Extension(optimization_service));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);

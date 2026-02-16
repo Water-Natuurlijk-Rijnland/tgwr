@@ -92,7 +92,7 @@ impl DashboardService {
     /// Get gemaal KPIs.
     async fn get_gemaal_kpi(&self) -> AnyhowResult<GemaalKpi> {
         // Get gemaal counts from database
-        let snapshots = self.db.get_all_snapshots().await?;
+        let snapshots = self.db.get_all_snapshots()?;
 
         let mut total = snapshots.len() as u32;
         let mut active = 0;
@@ -107,15 +107,15 @@ impl DashboardService {
 
         for snapshot in &snapshots {
             match &snapshot.status {
-                peilbeheer_core::gemaal::GemaalStatus::Activeren => active += 1,
-                peilbeheer_core::gemaal::GemaalStatus::Stilstand => inactive += 1,
-                peilbeheer_core::gemaal::GemaalStatus::Storing => error += 1,
+                peilbeheer_core::gemaal::GemaalStatus::Aan => active += 1,
+                peilbeheer_core::gemaal::GemaalStatus::Uit => inactive += 1,
+                peilbeheer_core::gemaal::GemaalStatus::Error => error += 1,
                 peilbeheer_core::gemaal::GemaalStatus::Onbekend => unknown += 1,
             }
 
             if snapshot.debiet > 0.0 {
                 total_capacity += snapshot.debiet;
-                if matches!(snapshot.status, peilbeheer_core::gemaal::GemaalStatus::Activeren) {
+                if matches!(snapshot.status, peilbeheer_core::gemaal::GemaalStatus::Aan) {
                     active_capacity += snapshot.debiet;
                 }
             }
@@ -286,9 +286,9 @@ impl DashboardService {
         }
 
         // Get gemaal status
-        let snapshots = self.db.get_all_snapshots().await.unwrap_or_default();
+        let snapshots = self.db.get_all_snapshots().unwrap_or_default();
         let active_count = snapshots.iter()
-            .filter(|s| matches!(s.status, peilbeheer_core::gemaal::GemaalStatus::Activeren))
+            .filter(|s| matches!(s.status, peilbeheer_core::gemaal::GemaalStatus::Aan))
             .count();
 
         items.push(ActivityFeedItem {
@@ -350,10 +350,10 @@ impl DashboardService {
         start: DateTime<Utc>,
         end: DateTime<Utc>,
     ) -> AnyhowResult<ChartData> {
-        let snapshots = self.db.get_all_snapshots().await?;
+        let snapshots = self.db.get_all_snapshots()?;
 
         let active = snapshots.iter()
-            .filter(|s| matches!(s.status, peilbeheer_core::gemaal::GemaalStatus::Activeren))
+            .filter(|s| matches!(s.status, peilbeheer_core::gemaal::GemaalStatus::Aan))
             .count() as f64;
 
         Ok(ChartData {
@@ -363,8 +363,8 @@ impl DashboardService {
                 label: "Gemalen".to_string(),
                 data: vec![
                     Some(active),
-                    Some(snapshots.iter().filter(|s| matches!(s.status, peilbeheer_core::gemaal::GemaalStatus::Stilstand)).count() as f64),
-                    Some(snapshots.iter().filter(|s| matches!(s.status, peilbeheer_core::gemaal::GemaalStatus::Storing)).count() as f64),
+                    Some(snapshots.iter().filter(|s| matches!(s.status, peilbeheer_core::gemaal::GemaalStatus::Uit)).count() as f64),
+                    Some(snapshots.iter().filter(|s| matches!(s.status, peilbeheer_core::gemaal::GemaalStatus::Error)).count() as f64),
                 ],
                 color: "#3b82f6".to_string(),
                 background_color: Some("#3b82f620".to_string()),
@@ -455,19 +455,7 @@ impl DashboardService {
     }
 }
 
-impl Default for ChartData {
-    fn default() -> Self {
-        Self {
-            title: String::new(),
-            labels: Vec::new(),
-            datasets: Vec::new(),
-            x_axis_label: None,
-            y_axis_label: None,
-            y_axis_min: None,
-            y_axis_max: None,
-        }
-    }
-}
+// Default implementation moved to peilbeheer-core/src/dashboard.rs
 
 #[cfg(test)]
 mod tests {

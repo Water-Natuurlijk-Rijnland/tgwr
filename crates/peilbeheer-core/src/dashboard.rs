@@ -322,6 +322,20 @@ pub struct ChartData {
     pub y_axis_max: Option<f64>,
 }
 
+impl Default for ChartData {
+    fn default() -> Self {
+        Self {
+            title: String::new(),
+            labels: Vec::new(),
+            datasets: Vec::new(),
+            x_axis_label: None,
+            y_axis_label: None,
+            y_axis_min: None,
+            y_axis_max: None,
+        }
+    }
+}
+
 /// Chart dataset.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChartDataset {

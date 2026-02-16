@@ -1,27 +1,109 @@
-use axum::Json;
+//! Optimization Runner API routes.
+//!
+//! Endpoints for pump scheduling optimization jobs and queue management.
+
+use axum::{
+    extract::{Extension, Path},
+    Json,
+};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use tracing::{info, warn};
+
+use peilbeheer_core::energie::*;
 
 use crate::energyzero_client;
 use crate::error::ApiError;
+use crate::optimization_service::OptimizationService;
 
-use peilbeheer_core::energie::{OptimalisatieParams, OptimalisatieResultaat, UurPrijs};
-use peilbeheer_simulatie::optimalisatie::optimize_pump_schedule;
-
-/// GET /api/energieprijzen — haal vandaag's EPEX-spotprijzen op.
-pub async fn get_energieprijzen() -> Result<Json<Vec<UurPrijs>>, ApiError> {
-    let prijzen = energyzero_client::fetch_energieprijzen_vandaag()
-        .await
-        .map_err(|e| ApiError::Hydronet(format!("EnergyZero: {e}")))?;
-
-    Ok(Json(prijzen))
+/// Request to create an optimization job.
+#[derive(Debug, Deserialize)]
+pub struct CreateJobRequest {
+    pub name: String,
+    pub peilgebied_id: String,
+    pub params: OptimalisatieParams,
 }
 
-/// POST /api/optimalisatie — voer DP-optimalisatie uit.
-///
-/// Als `prijzen` leeg zijn in de request, worden ze opgehaald via de EnergyZero API.
+/// Response for job creation.
+#[derive(Debug, Serialize)]
+pub struct CreateJobResponse {
+    pub job_id: String,
+    pub status: String,
+}
+
+/// Get all jobs.
+pub async fn list_jobs(
+    Extension(service): Extension<Arc<OptimizationService>>,
+) -> Result<Json<Vec<OptimizationJob>>, ApiError> {
+    let jobs = service.list_jobs().await;
+    Ok(Json(jobs))
+}
+
+/// Get a specific job.
+pub async fn get_job(
+    Extension(service): Extension<Arc<OptimizationService>>,
+    Path(id): Path<String>,
+) -> Result<Json<Option<OptimizationJob>>, ApiError> {
+    Ok(Json(service.get_job(&id).await))
+}
+
+/// Create a new optimization job.
+pub async fn create_job(
+    Extension(service): Extension<Arc<OptimizationService>>,
+    Json(req): Json<CreateJobRequest>,
+) -> Result<Json<CreateJobResponse>, ApiError> {
+    let job = OptimizationJob::new(req.name, req.peilgebied_id, req.params);
+
+    match service.submit_job(job).await {
+        Ok(job_id) => Ok(Json(CreateJobResponse {
+            job_id,
+            status: "queued".to_string(),
+        })),
+        Err(e) => {
+            warn!("Failed to submit job: {}", e);
+            Err(ApiError::Hydronet(format!("Failed to submit job: {}", e)))
+        }
+    }
+}
+
+/// Cancel a job.
+pub async fn cancel_job(
+    Extension(service): Extension<Arc<OptimizationService>>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    match service.cancel_job(&id).await {
+        Ok(cancelled) => Ok(Json(serde_json::json!({
+            "cancelled": cancelled,
+            "job_id": id,
+        }))),
+        Err(e) => Err(ApiError::Hydronet(format!("Failed to cancel job: {}", e))),
+    }
+}
+
+/// Get queue statistics.
+pub async fn get_queue_stats(
+    Extension(service): Extension<Arc<OptimizationService>>,
+) -> Result<Json<QueueStats>, ApiError> {
+    let stats = service.get_queue_stats().await;
+    Ok(Json(stats))
+}
+
+/// Get price forecast.
+pub async fn get_price_forecast(
+    Extension(service): Extension<Arc<OptimizationService>>,
+) -> Result<Json<PriceForecast>, ApiError> {
+    match service.get_price_forecast(24).await {
+        Ok(forecast) => Ok(Json(forecast)),
+        Err(e) => Err(ApiError::Hydronet(format!("Failed to get forecast: {}", e))),
+    }
+}
+
+/// Run immediate optimization (synchronous).
 pub async fn run_optimalisatie(
+    Extension(service): Extension<Arc<OptimizationService>>,
     Json(mut params): Json<OptimalisatieParams>,
 ) -> Result<Json<OptimalisatieResultaat>, ApiError> {
-    // Validatie
+    // Validate
     if params.oppervlakte <= 0.0 {
         return Err(ApiError::Validation(
             "oppervlakte moet groter zijn dan 0".into(),
@@ -39,15 +121,48 @@ pub async fn run_optimalisatie(
         )));
     }
 
-    // Als er geen prijzen meegestuurd zijn, haal ze op
+    // If no prices provided, fetch from EnergyZero
     if params.prijzen.is_empty() {
-        params.prijzen = energyzero_client::fetch_energieprijzen_vandaag()
-            .await
-            .map_err(|e| ApiError::Hydronet(format!("EnergyZero: {e}")))?;
+        // Try to fetch from service or use forecast
+        match service.get_price_forecast(24).await {
+            Ok(forecast) => {
+                params.prijzen = forecast.hourly_prices.iter()
+                    .map(|hp| UurPrijs {
+                        uur: (hp.hour_start.timestamp() / 3600) as u8,
+                        prijs_eur_kwh: hp.price_eur_kwh,
+                    })
+                    .collect();
+            }
+            Err(_) => {
+                // Fall back to EnergyZero client
+                params.prijzen = energyzero_client::fetch_energieprijzen_vandaag()
+                    .await
+                    .map_err(|e| ApiError::Hydronet(format!("EnergyZero: {}", e)))?;
+            }
+        }
     }
 
-    let resultaat = optimize_pump_schedule(&params)
+    // Run optimization
+    let result = peilbeheer_simulatie::optimalisatie::optimize_pump_schedule(&params)
         .map_err(|e| ApiError::Validation(e))?;
 
-    Ok(Json(resultaat))
+    Ok(Json(result))
+}
+
+/// Get energy prices (legacy endpoint - redirects to forecast).
+pub async fn get_energieprijzen(
+    Extension(service): Extension<Arc<OptimizationService>>,
+) -> Result<Json<Vec<UurPrijs>>, ApiError> {
+    match service.get_price_forecast(24).await {
+        Ok(forecast) => {
+            let prijzen: Vec<UurPrijs> = forecast.hourly_prices.iter()
+                .map(|hp| UurPrijs {
+                    uur: (hp.hour_start.timestamp() / 3600) as u8,
+                    prijs_eur_kwh: hp.price_eur_kwh,
+                })
+                .collect();
+            Ok(Json(prijzen))
+        }
+        Err(e) => Err(ApiError::Hydronet(format!("Failed to get prices: {}", e))),
+    }
 }

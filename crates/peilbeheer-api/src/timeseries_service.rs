@@ -566,7 +566,7 @@ impl TimeSeriesService {
 
     /// Forward fill gaps.
     fn fill_forward(
-        self,
+        &self,
         data: Vec<TimeSeriesDataPoint>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
@@ -614,7 +614,7 @@ impl TimeSeriesService {
 
     /// Linear interpolation for gaps.
     fn fill_linear(
-        self,
+        &self,
         data: Vec<TimeSeriesDataPoint>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
