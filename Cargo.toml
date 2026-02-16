@@ -32,7 +32,7 @@ tokio = { version = "1.43", features = ["full"] }
 duckdb = { version = "1.1", features = ["bundled"] }
 
 # Web framework
-axum = "0.8"
+axum = { version = "0.8", features = ["ws"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors", "trace", "fs"] }
 
@@ -42,6 +42,11 @@ reqwest = { version = "0.12", features = ["json"] }
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# WebSocket
+tokio-tungstenite = "0.24"
+futures-util = "0.3"
+uuid = { version = "1.11", features = ["v4", "serde"] }
 
 # Internal crates
 peilbeheer-core = { path = "crates/peilbeheer-core" }

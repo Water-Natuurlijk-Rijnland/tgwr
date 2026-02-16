@@ -43,3 +43,8 @@ dotenvy = "0.15"
 # Authentication
 jsonwebtoken = "9"
 sha2 = "0.10"
+
+# WebSocket
+tokio-tungstenite.workspace = true
+futures-util.workspace = true
+uuid.workspace = true

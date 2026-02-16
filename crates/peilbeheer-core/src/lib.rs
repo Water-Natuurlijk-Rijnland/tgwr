@@ -8,6 +8,7 @@ pub mod peilgebied;
 pub mod scenario;
 pub mod sliding_window;
 pub mod waterbalans;
+pub mod websocket;
 
 pub use asset::AssetRegistratie;
 pub use auth::{
@@ -33,4 +34,8 @@ pub use scenario::{
     StoredScenarioResult, StoredTimeSeriesResult, UpdateScenarioRequest,
 };
 pub use sliding_window::{SlidingWindowProcessor, WindowStats};
+pub use websocket::{
+    AlertSeverity, SubscribeRequest, TimeSeriesPoint as WsTimeSeriesPoint, UnsubscribeRequest,
+    WsMessage,
+};
 pub use waterbalans::{SimulatieParams, SimulatieStap, WaterBalance};

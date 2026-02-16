@@ -18,10 +18,12 @@ mod error;
 mod hydronet_client;
 mod routes;
 mod scenario_service;
+mod websocket_service;
 
 use auth_service::AuthService;
 use db::Database;
 use scenario_service::ScenarioService;
+use websocket_service::WebSocketServer;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -127,6 +129,7 @@ async fn main() -> anyhow::Result<()> {
     let db_arc = Arc::new(db);
     let scenario_service = Arc::new(ScenarioService::new(db_arc.clone()));
     let auth_service = Arc::new(AuthService::with_default_config(db_arc.clone())?);
+    let ws_server = Arc::new(WebSocketServer::new());
 
     // Ensure default admin user exists
     if auth_service.ensure_default_admin()? {
@@ -135,6 +138,7 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("Scenario service initialized");
     tracing::info!("Authentication service initialized");
+    tracing::info!("WebSocket server initialized (ID: {})", ws_server.server_id());
 
     // Build API router
     let api = Router::new()
@@ -173,7 +177,10 @@ async fn main() -> anyhow::Result<()> {
         .route("/scenarios/{id}", delete(routes::scenarios::delete_scenario))
         .route("/scenarios/{id}/execute", post(routes::scenarios::execute_scenario))
         .route("/scenarios/{id}/results", get(routes::scenarios::get_scenario_results))
-        .route("/scenarios/{id}/clone", post(routes::scenarios::clone_scenario));
+        .route("/scenarios/{id}/clone", post(routes::scenarios::clone_scenario))
+        // WebSocket routes
+        .route("/ws", get(routes::websocket::websocket_handler))
+        .route("/ws/status", get(routes::websocket::ws_status));
 
     // Combine API with static file serving
     let app = Router::new()
@@ -188,7 +195,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(db_arc))
         .layer(Extension(Arc::new(config.clone())))
         .layer(Extension(scenario_service))
-        .layer(Extension(auth_service));
+        .layer(Extension(auth_service))
+        .layer(Extension(ws_server));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);
