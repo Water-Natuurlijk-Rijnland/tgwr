@@ -1,0 +1,1265 @@
+:root {
+    --primary: #1a5276;
+    --primary-light: #2980b9;
+    --secondary: #2c3e50;
+    --accent: #27ae60;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --muted: #95a5a6;
+    --bg: #ecf0f1;
+    --surface: #ffffff;
+    --text: #2c3e50;
+    --text-light: #7f8c8d;
+    --border: #dce1e3;
+    --radius: 8px;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+}
+
+/* Navbar */
+.navbar {
+    background: var(--primary);
+    color: white;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    height: 56px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.navbar-brand {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-right: 2rem;
+    letter-spacing: 0.5px;
+}
+
+.navbar-links {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.navbar-links a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    transition: background 0.2s, color 0.2s;
+}
+
+.navbar-links a:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.navbar-links a.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-weight: 600;
+}
+
+/* Page layout */
+.page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.page-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--secondary);
+    margin-bottom: 1.5rem;
+}
+
+/* Cards */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.card-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-light);
+    margin-bottom: 0.25rem;
+}
+
+.card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.card-unit {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 400;
+}
+
+/* Tables */
+.table-container {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: var(--primary);
+    color: white;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+}
+
+tr:hover {
+    background: rgba(26, 82, 118, 0.03);
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+/* Status badges */
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-aan {
+    background: #d4efdf;
+    color: #1e8449;
+}
+
+.badge-uit {
+    background: #eaecee;
+    color: #5d6d7e;
+}
+
+.badge-onbekend {
+    background: #fdebd0;
+    color: #b9770e;
+}
+
+.badge-error {
+    background: #fadbd8;
+    color: #c0392b;
+}
+
+/* Links in tables */
+td a {
+    color: var(--primary-light);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+td a:hover {
+    text-decoration: underline;
+}
+
+/* Detail page */
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.detail-header .page-title {
+    margin-bottom: 0;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.detail-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+.detail-card h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-light);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+}
+
+.detail-label {
+    color: var(--text-light);
+    font-size: 0.85rem;
+}
+
+.detail-value {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Trend indicators */
+.trend-up {
+    color: var(--danger);
+}
+
+.trend-down {
+    color: var(--accent);
+}
+
+.trend-stable {
+    color: var(--muted);
+}
+
+/* Simulatie form */
+.form-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    margin-bottom: 2rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.4rem;
+}
+
+.form-group input,
+.form-group select {
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    color: var(--text);
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.15);
+}
+
+.form-group .unit {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-top: 0.2rem;
+}
+
+.form-section-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--secondary);
+    margin: 1.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.7rem 2rem;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-light);
+}
+
+.btn-primary:disabled {
+    background: var(--muted);
+    cursor: not-allowed;
+}
+
+.form-actions {
+    margin-top: 1.5rem;
+}
+
+/* Result section */
+.result-section {
+    margin-top: 2rem;
+}
+
+.result-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.chart-container {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+}
+
+/* Loading & error states */
+.loading {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-light);
+    font-size: 1.1rem;
+}
+
+.error-message {
+    background: #fadbd8;
+    border: 1px solid #e74c3c;
+    color: #c0392b;
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-light);
+}
+
+/* Kaart page — full screen map */
+.kaart-page {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 56px);
+    overflow: hidden;
+}
+
+.kaart-map {
+    width: 100%;
+    height: 100%;
+}
+
+.kaart-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.kaart-count-badge {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 1rem;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+/* Detail side panel */
+.kaart-panel {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 340px;
+    max-height: calc(100% - 2rem);
+    overflow-y: auto;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    border: 1px solid var(--border);
+    z-index: 1000;
+}
+
+.kaart-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.kaart-panel-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--secondary);
+    margin: 0;
+}
+
+.kaart-panel-type {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-light);
+}
+
+.kaart-panel-close {
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    color: var(--text-light);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 0.25rem;
+}
+
+.kaart-panel-close:hover {
+    color: var(--text);
+}
+
+.kaart-panel-body {
+    padding: 1.25rem 1.5rem;
+}
+
+.kaart-detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--bg);
+}
+
+.kaart-detail-row:last-child {
+    border-bottom: none;
+}
+
+.kaart-detail-label {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.kaart-detail-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* Code link with expand toggle */
+.kaart-code-link {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--primary-light);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.kaart-code-link:hover {
+    text-decoration: underline;
+}
+
+/* Live data in detail panel */
+.kaart-panel-live {
+    padding: 0 1.5rem 1.25rem;
+    border-top: 1px solid var(--border);
+}
+
+.kaart-panel-status {
+    padding: 1rem 0;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.kaart-live-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 0 0.5rem;
+}
+
+.kaart-status-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.kaart-status-aan {
+    background: #d4efdf;
+    color: #1e8449;
+}
+
+.kaart-status-uit {
+    background: #eaecee;
+    color: #5d6d7e;
+}
+
+.kaart-live-debiet {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.kaart-live-time {
+    font-size: 0.7rem;
+    color: var(--text-light);
+    padding-bottom: 0.5rem;
+}
+
+.kaart-live-stats {
+    display: flex;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    margin-bottom: 0.5rem;
+}
+
+.kaart-live-stat {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    background: var(--bg);
+    padding: 0.5rem;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.kaart-live-stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-light);
+}
+
+.kaart-live-stat-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.kaart-toggle {
+    display: flex;
+    gap: 0;
+    margin: 0.5rem 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.kaart-toggle-btn {
+    flex: 1;
+    padding: 0.3rem 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+    border: none;
+    background: var(--bg);
+    color: var(--text-light);
+    cursor: pointer;
+}
+
+.kaart-toggle-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+.kaart-chart {
+    margin-top: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.kaart-chart svg {
+    display: block;
+}
+
+.kaart-chart-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: var(--text-light);
+    padding: 0.15rem 0.25rem 0;
+}
+
+/* Layer control panel */
+.layer-control {
+    position: absolute;
+    top: 5rem;
+    left: 0.75rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border);
+    z-index: 1001;
+    padding: 0.75rem;
+    min-width: 180px;
+    max-height: calc(100vh - 10rem);
+    overflow-y: auto;
+}
+
+.layer-control-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.layer-control-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text);
+}
+
+.layer-control-item:hover {
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 4px;
+}
+
+.layer-control-item input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.layer-control-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.layer-control-label {
+    flex: 1;
+    font-weight: 500;
+}
+
+.layer-control-count {
+    font-size: 0.7rem;
+    color: var(--text-light);
+    background: var(--bg);
+    padding: 0.1rem 0.4rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* Leaflet custom icon overrides */
+.gemaal-icon,
+.asset-icon {
+    background: none !important;
+    border: none !important;
+}
+
+.leaflet-container {
+    outline: none !important;
+}
+
+/* ── Simulation modal ── */
+.sim-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sim-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+}
+
+.sim-modal {
+    position: relative;
+    width: min(900px, 94vw);
+    max-height: 90vh;
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sim-modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-shrink: 0;
+}
+
+.sim-modal-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--secondary);
+    margin: 0;
+}
+
+.sim-modal-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    margin-top: 0.2rem;
+}
+
+.sim-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    color: var(--text-light);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 0.25rem;
+}
+.sim-modal-close:hover { color: var(--text); }
+
+.sim-modal-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.sim-modal-left {
+    width: 340px;
+    flex-shrink: 0;
+    padding: 1rem 1.5rem;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+}
+
+.sim-modal-right {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    overflow-y: auto;
+    min-width: 0;
+}
+
+/* Info bar (horizontal chips) */
+.sim-info-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.sim-info-chip {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 0.35rem 0.6rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.sim-info-chip-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-light);
+    font-weight: 600;
+}
+
+.sim-info-chip-value {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.sim-section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-light);
+    margin: 0.75rem 0 0.5rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--border);
+}
+
+/* Form grid (2 cols) */
+.sim-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.sim-field label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-light);
+    margin-bottom: 0.2rem;
+}
+
+.sim-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.sim-input-wrap input,
+.sim-input-wrap select {
+    flex: 1;
+    min-width: 0;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--text);
+    background: white;
+}
+
+.sim-input-wrap input:focus,
+.sim-input-wrap select:focus {
+    outline: none;
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 2px rgba(41, 128, 185, 0.15);
+}
+
+.sim-unit {
+    font-size: 0.68rem;
+    color: var(--text-light);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Advanced parameters */
+.sim-advanced {
+    margin-top: 0.5rem;
+}
+.sim-advanced summary {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+}
+.sim-advanced[open] summary {
+    margin-bottom: 0.5rem;
+}
+
+.sim-check-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.82rem;
+}
+
+.sim-check-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+}
+
+.sim-btn {
+    width: 100%;
+    padding: 0.65rem;
+    margin-top: 0.75rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.sim-btn:hover { background: var(--primary-light); }
+.sim-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+/* Placeholder (before simulation) */
+.sim-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    color: var(--text-light);
+    padding: 2rem;
+}
+.sim-placeholder-icon { font-size: 3rem; margin-bottom: 1rem; }
+.sim-placeholder p { font-size: 0.9rem; line-height: 1.5; max-width: 300px; }
+
+.sim-error {
+    background: #fadbd8;
+    color: #c0392b;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+/* ── Result display ── */
+.sim-results {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.sim-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.sim-status-ok { background: #d4efdf; color: #1e8449; }
+.sim-status-warn { background: #fef3cd; color: #856404; }
+.sim-status-danger { background: #fadbd8; color: #c0392b; }
+.sim-status-info { background: #d6eaf8; color: #2471a3; }
+.sim-status-icon { font-size: 1.1rem; }
+
+.sim-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.sim-metric {
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 0.5rem;
+    text-align: center;
+}
+.sim-metric-value { font-size: 1.15rem; font-weight: 700; color: var(--primary); }
+.sim-metric-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-light);
+    font-weight: 600;
+    margin-top: 0.15rem;
+}
+
+.sim-overschrijding {
+    background: #fadbd8;
+    border: 1px solid #e74c3c;
+    border-radius: 6px;
+    padding: 0.5rem 0.8rem;
+    margin-bottom: 0.75rem;
+    text-align: center;
+}
+.sim-overschrijding-value { font-size: 1.2rem; font-weight: 700; color: #c0392b; }
+.sim-overschrijding-label { font-size: 0.75rem; color: #c0392b; }
+
+.sim-chart-container {
+    flex: 1;
+    min-height: 250px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem;
+    background: white;
+    margin-bottom: 0.75rem;
+    position: relative;
+}
+.sim-chart-container canvas {
+    position: absolute;
+    inset: 0.5rem;
+    width: calc(100% - 1rem) !important;
+    height: calc(100% - 1rem) !important;
+}
+
+.sim-result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.35rem 0;
+}
+.sim-result-label { font-size: 0.8rem; color: var(--text-light); }
+.sim-result-value { font-size: 0.85rem; font-weight: 700; color: var(--text); }
+
+.sim-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.95);
+    padding: 1rem 2rem;
+    border-radius: var(--radius);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    font-size: 0.95rem;
+    color: var(--text-light);
+    z-index: 500;
+    pointer-events: none;
+}
+
+/* ── Tab navigation ── */
+.sim-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border);
+    padding: 0 1.5rem;
+    flex-shrink: 0;
+}
+
+.sim-tab {
+    padding: 0.6rem 1.25rem;
+    border: none;
+    background: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-light);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.sim-tab:hover {
+    color: var(--text);
+}
+
+.sim-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.sim-modal-wide {
+    width: min(1050px, 96vw);
+}
+
+/* ── Rain slider ── */
+.rain-slider-field {
+    margin-top: 0.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.rain-slider-field label {
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+.rain-slider {
+    width: 100%;
+    margin: 0.3rem 0 0.15rem;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.rain-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.55rem;
+    color: var(--text-light);
+}
+
+/* ── Mini price bar chart ── */
+.price-chart-mini {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 50px;
+    padding: 0 2px;
+    background: var(--bg);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.price-bar {
+    flex: 1;
+    min-width: 0;
+    border-radius: 2px 2px 0 0;
+    transition: opacity 0.15s;
+    cursor: default;
+}
+
+.price-bar:hover {
+    opacity: 0.8;
+}
+
+.price-chart-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.55rem;
+    color: var(--text-light);
+    padding: 0.15rem 2px 0;
+}
+
+/* ── Savings banner ── */
+.opt-savings-banner {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.opt-savings-positive {
+    background: linear-gradient(135deg, #d4efdf, #a9dfbf);
+    color: #1e8449;
+}
+
+.opt-savings-neutral {
+    background: var(--bg);
+    color: var(--text-light);
+}
+
+.opt-savings-amount {
+    font-size: 1.6rem;
+    font-weight: 800;
+}
+
+.opt-savings-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* ── Optimalisatie table ── */
+.opt-table-scroll {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+}
+
+.opt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+}
+
+.opt-table th {
+    position: sticky;
+    top: 0;
+    background: var(--primary);
+    color: white;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    z-index: 1;
+}
+
+.opt-table td {
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid var(--bg);
+    text-align: right;
+}
+
+.opt-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+}
+
+.opt-table tbody tr:hover {
+    background: rgba(26, 82, 118, 0.04);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .navbar {
+        padding: 0 1rem;
+    }
+
+    .navbar-brand {
+        font-size: 1rem;
+        margin-right: 1rem;
+    }
+
+    .navbar-links a {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    .page {
+        padding: 1rem;
+    }
+
+    .page-title {
+        font-size: 1.3rem;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
