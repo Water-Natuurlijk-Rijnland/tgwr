@@ -1,6 +1,7 @@
 pub mod alert;
 pub mod asset;
 pub mod auth;
+pub mod dashboard;
 pub mod dhydro;
 pub mod energie;
 pub mod fews;
@@ -61,4 +62,14 @@ pub use timeseries::{
     AggregationMetadata, DownsampleConfig, FillMethod, GapAnalysisResult, QualityFlag,
     TimeSeriesCatalogEntry, TimeSeriesDataPoint, TimeSeriesId, TimeSeriesMetadata,
     TimeSeriesQuery as TsQuery, TimeSeriesSourceType, TimeSeriesWriteBatch, TimeSeriesWriteResult,
+};
+pub use dashboard::{
+    ActivityFeedData, ActivityFeedItem, ActivityFeedQuery, ActivityType, AlertKpi,
+    AlertSeverity as DashboardAlertSeverity, ChartData, ChartDataset, ChartDatasetType,
+    ColumnDataType, DashboardConfig, DashboardKpi, DashboardLayout, DashboardWidget,
+    DashboardWidgetConfig, GemaalKpi, GridType, HealthStatus as DashboardHealthStatus,
+    KpiCard, KpiCardsData, LayerType, MapCenter, MapData, MapLayer, MapMarker, MarkerType,
+    PerformanceKpi, ScenarioKpi, StatusListData, StatusListItem, SyncKpi,
+    TableColumn, TableRow, TableCell, TrendDirection as DashboardTrendDirection,
+    WidgetData, WidgetType,
 };

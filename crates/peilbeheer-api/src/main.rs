@@ -14,6 +14,7 @@ mod alert_service;
 mod arcgis_client;
 mod auth_service;
 mod config;
+mod dashboard_service;
 mod db;
 mod energyzero_client;
 mod error;
@@ -26,6 +27,7 @@ mod websocket_service;
 
 use alert_service::AlertService;
 use auth_service::AuthService;
+use dashboard_service::DashboardService;
 use db::Database;
 use fews_client::{FewsClient, FewsSyncService};
 use scenario_service::ScenarioService;
@@ -140,6 +142,7 @@ async fn main() -> anyhow::Result<()> {
     let alert_service = Arc::new(AlertService::new(db_arc.clone(), ws_server.clone()));
     alert_service.initialize().await?;
     let timeseries_service = Arc::new(TimeSeriesService::new(db_arc.clone()));
+    let dashboard_service = Arc::new(DashboardService::new(db_arc.clone()));
 
     // Initialize Fews client (if configured)
     let fews_config = FewsConfig {
@@ -164,6 +167,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("WebSocket server initialized (ID: {})", ws_server.server_id());
     tracing::info!("Alert service initialized");
     tracing::info!("Time series service initialized");
+    tracing::info!("Dashboard service initialized");
     tracing::info!("Fews client initialized (filter: {})", fews_config.filter_id);
 
     // Build API router
@@ -238,7 +242,16 @@ async fn main() -> anyhow::Result<()> {
         .route("/timeseries/register", post(routes::timeseries::register_series))
         .route("/timeseries/{location_id}/{parameter}", get(routes::timeseries::get_series_metadata))
         .route("/timeseries/levels", get(routes::timeseries::get_aggregation_levels))
-        .route("/timeseries/functions", get(routes::timeseries::get_aggregation_functions));
+        .route("/timeseries/functions", get(routes::timeseries::get_aggregation_functions))
+        // Dashboard routes
+        .route("/dashboard/kpi", get(routes::dashboard::get_kpi))
+        .route("/dashboard/health", get(routes::dashboard::get_health))
+        .route("/dashboard/activity", get(routes::dashboard::get_activity_feed))
+        .route("/dashboard/alerts", get(routes::dashboard::get_alert_summary))
+        .route("/dashboard/gemalen", get(routes::dashboard::get_gemaal_summary))
+        .route("/dashboard/chart", get(routes::dashboard::get_chart))
+        .route("/dashboard/widgets/system", get(routes::dashboard::get_system_overview_widget))
+        .route("/dashboard/widgets/gemalen", get(routes::dashboard::get_gemaal_status_widget));
 
     // Combine API with static file serving
     let app = Router::new()
@@ -258,7 +271,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(fews_client))
         .layer(Extension(fews_sync_service))
         .layer(Extension(alert_service))
-        .layer(Extension(timeseries_service));
+        .layer(Extension(timeseries_service))
+        .layer(Extension(dashboard_service));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);

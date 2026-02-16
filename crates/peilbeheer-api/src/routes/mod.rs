@@ -1,6 +1,7 @@
 pub mod alerts;
 pub mod auth;
 pub mod assets;
+pub mod dashboard;
 pub mod dhydro;
 pub mod fews;
 pub mod gemalen;
