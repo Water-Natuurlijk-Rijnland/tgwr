@@ -199,6 +199,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/optimization/jobs/{id}/cancel", post(routes::optimalisatie::cancel_job))
         .route("/optimization/queue/stats", get(routes::optimalisatie::get_queue_stats))
         .route("/optimization/forecast", get(routes::optimalisatie::get_price_forecast))
+        .route("/optimization/forecast/refresh", post(routes::optimalisatie::refresh_price_forecast))
         // Authentication routes
         .route("/auth/login", post(routes::auth::login))
         .route("/auth/logout", post(routes::auth::logout))

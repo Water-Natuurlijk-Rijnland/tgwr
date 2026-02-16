@@ -8,7 +8,7 @@
 //! - WebSocket notifications for job completion
 
 use anyhow::Result as AnyhowResult;
-use chrono::{Duration, Timelike, Utc};
+use chrono::{DateTime, Duration, NaiveDate, Timelike, Utc};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
@@ -17,6 +17,7 @@ use tracing::{debug, info};
 use peilbeheer_core::energie::*;
 
 use crate::db::Database;
+use crate::energyzero_client;
 use crate::websocket_service::WebSocketServer;
 
 /// Optimization service with background job processing.
@@ -25,6 +26,8 @@ pub struct OptimizationService {
     ws_server: Arc<WebSocketServer>,
     jobs: Arc<RwLock<HashMap<String, OptimizationJob>>>,
     job_tx: mpsc::Sender<JobCommand>,
+    /// Cached price forecast with timestamp
+    price_cache: Arc<RwLock<Option<(PriceForecast, DateTime<Utc>)>>>,
 }
 
 /// Commands for the job worker.
@@ -41,6 +44,7 @@ impl OptimizationService {
         let (job_tx, job_rx) = mpsc::channel(100);
 
         let jobs = Arc::new(RwLock::new(HashMap::new()));
+        let price_cache = Arc::new(RwLock::new(None));
 
         // Start background worker
         Self::start_worker(jobs.clone(), job_rx);
@@ -50,6 +54,7 @@ impl OptimizationService {
             ws_server,
             jobs,
             job_tx,
+            price_cache,
         };
 
         info!("Optimization service started with background worker");
@@ -147,20 +152,84 @@ impl OptimizationService {
     }
 
     /// Get price forecast for optimization.
+    ///
+    /// Uses a 15-minute cache to avoid excessive API calls.
+    /// Fetches today's prices from EnergyZero API.
     pub async fn get_price_forecast(&self, hours: u8) -> AnyhowResult<PriceForecast> {
-        // TODO: Fetch from EnergyZero API
-        // For now, return mock data with simple price pattern
-        let prices: Vec<f64> = (0..hours)
-            .map(|i| {
-                // Simulated price pattern: cheaper at night, expensive during day
-                let hour = (Utc::now().hour() + i as u32) % 24;
-                let base = 0.15;
-                let premium = if hour >= 8 && hour <= 20 { 0.20 } else { 0.0 };
-                base + premium
+        let now = Utc::now();
+        let cache_duration = Duration::minutes(15);
+
+        // Check cache first
+        {
+            let cache = self.price_cache.read().await;
+            if let Some((forecast, cached_at)) = cache.as_ref() {
+                if now.signed_duration_since(*cached_at) < cache_duration {
+                    // Cache is still valid, return cached forecast
+                    debug!("Using cached price forecast from {:?}", cached_at);
+                    // If we need more hours than cached, we might need to fetch more
+                    if forecast.hourly_prices.len() >= hours as usize {
+                        return Ok(forecast.clone());
+                    }
+                }
+            }
+        }
+
+        // Cache miss or expired, fetch from EnergyZero
+        debug!("Fetching prices from EnergyZero API");
+
+        // Calculate how many days we need to fetch
+        let days_needed = (hours as f64 / 24.0).ceil() as u8;
+        let start_date = Utc::now().date_naive();
+
+        // Fetch prices for multiple days at once
+        let all_prices = energyzero_client::fetch_energieprijzen_multiple_days(start_date, days_needed)
+            .await
+            .map_err(|e| anyhow::anyhow!("EnergyZero fetch failed: {}", e))?;
+
+        // Take only the requested number of hours
+        let all_prices = all_prices.into_iter().take(hours as usize).collect::<Vec<_>>();
+
+        // Create HourlyPrice entries from UurPrijs
+        let now_dt = Utc::now();
+        let hourly_prices: Vec<HourlyPrice> = all_prices
+            .into_iter()
+            .enumerate()
+            .map(|(i, uur_prijs)| {
+                let hour_start = now_dt + Duration::hours(i as i64);
+                HourlyPrice {
+                    hour_start,
+                    price_eur_kwh: uur_prijs.prijs_eur_kwh,
+                    is_forecast: hour_start > now_dt,
+                }
             })
             .collect();
 
-        Ok(PriceForecast::from_energyzero(prices))
+        let forecast = PriceForecast {
+            timestamp: now,
+            hourly_prices,
+            forecast_created: now,
+            source: PriceSource::EnergyZero,
+        };
+
+        // Update cache
+        {
+            let mut cache = self.price_cache.write().await;
+            *cache = Some((forecast.clone(), now));
+        }
+
+        info!("Price forecast updated: {} hours from EnergyZero", forecast.hourly_prices.len());
+        Ok(forecast)
+    }
+
+    /// Refresh price forecast, bypassing the cache.
+    pub async fn refresh_price_forecast(&self, hours: u8) -> AnyhowResult<PriceForecast> {
+        // Clear the cache first
+        {
+            let mut cache = self.price_cache.write().await;
+            *cache = None;
+        }
+        // Then fetch new data
+        self.get_price_forecast(hours).await
     }
 
     /// Start the background worker.
@@ -333,6 +402,7 @@ impl Clone for OptimizationService {
             ws_server: self.ws_server.clone(),
             jobs: self.jobs.clone(),
             job_tx: self.job_tx.clone(),
+            price_cache: self.price_cache.clone(),
         }
     }
 }

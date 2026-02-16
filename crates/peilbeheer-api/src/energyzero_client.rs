@@ -1,6 +1,32 @@
 use chrono::{NaiveDate, Utc};
 use peilbeheer_core::energie::UurPrijs;
 use serde::Deserialize;
+use thiserror::Error;
+
+/// Errors from EnergyZero API calls.
+#[derive(Debug, Error)]
+pub enum EnergyZeroError {
+    #[error("HTTP request failed: {0}")]
+    RequestError(#[from] reqwest::Error),
+
+    #[error("API returned error status {status}: {message}")]
+    ApiError { status: reqwest::StatusCode, message: String },
+
+    #[error("Failed to parse response: {0}")]
+    ParseError(#[from] serde_json::Error),
+
+    #[error("Insufficient price data: expected 24 hours, got {0}")]
+    InsufficientData(usize),
+
+    #[error("Invalid date: {0}")]
+    InvalidDate(String),
+}
+
+impl From<EnergyZeroError> for String {
+    fn from(e: EnergyZeroError) -> Self {
+        e.to_string()
+    }
+}
 
 #[derive(Debug, Deserialize)]
 struct EnergyZeroResponse {
@@ -18,17 +44,17 @@ struct EnergyZeroPriceEntry {
 
 /// Haal de EPEX-spotprijzen op voor vandaag van de EnergyZero API.
 /// Retourneert 24 UurPrijs entries (uur 0..23) met prijs incl. BTW in €/kWh.
-pub async fn fetch_energieprijzen_vandaag() -> Result<Vec<UurPrijs>, String> {
+pub async fn fetch_energieprijzen_vandaag() -> Result<Vec<UurPrijs>, EnergyZeroError> {
     let today = Utc::now().date_naive();
     fetch_energieprijzen(today).await
 }
 
 /// Haal de EPEX-spotprijzen op voor een specifieke datum.
-pub async fn fetch_energieprijzen(datum: NaiveDate) -> Result<Vec<UurPrijs>, String> {
+pub async fn fetch_energieprijzen(datum: NaiveDate) -> Result<Vec<UurPrijs>, EnergyZeroError> {
     let from = format!("{}T00:00:00.000Z", datum);
     let till = format!(
         "{}T00:00:00.000Z",
-        datum.succ_opt().ok_or("Ongeldige datum")?
+        datum.succ_opt().ok_or_else(|| EnergyZeroError::InvalidDate("No next day".to_string()))?
     );
 
     let url = format!(
@@ -38,22 +64,15 @@ pub async fn fetch_energieprijzen(datum: NaiveDate) -> Result<Vec<UurPrijs>, Str
 
     tracing::debug!("EnergyZero request: {}", url);
 
-    let response = reqwest::get(&url)
-        .await
-        .map_err(|e| format!("EnergyZero request mislukt: {e}"))?;
+    let response = reqwest::get(&url).await?;
 
     if !response.status().is_success() {
-        return Err(format!(
-            "EnergyZero API gaf status {}: {}",
-            response.status(),
-            response.text().await.unwrap_or_default()
-        ));
+        let status = response.status();
+        let message = response.text().await.unwrap_or_default();
+        return Err(EnergyZeroError::ApiError { status, message });
     }
 
-    let data: EnergyZeroResponse = response
-        .json()
-        .await
-        .map_err(|e| format!("EnergyZero response parse mislukt: {e}"))?;
+    let data: EnergyZeroResponse = response.json().await?;
 
     // De API retourneert prijzen in €/kWh, gesorteerd op readingDate.
     // We nemen de eerste 24 entries en mappen ze naar uur 0..23.
@@ -69,10 +88,7 @@ pub async fn fetch_energieprijzen(datum: NaiveDate) -> Result<Vec<UurPrijs>, Str
         .collect();
 
     if prijzen.len() < 24 {
-        return Err(format!(
-            "EnergyZero retourneerde slechts {} uurprijzen (verwacht 24)",
-            prijzen.len()
-        ));
+        return Err(EnergyZeroError::InsufficientData(prijzen.len()));
     }
 
     tracing::info!(
@@ -82,4 +98,37 @@ pub async fn fetch_energieprijzen(datum: NaiveDate) -> Result<Vec<UurPrijs>, Str
     );
 
     Ok(prijzen)
+}
+
+/// Fetch prices for multiple consecutive days.
+pub async fn fetch_energieprijzen_multiple_days(start_date: NaiveDate, days: u8) -> Result<Vec<UurPrijs>, EnergyZeroError> {
+    let mut all_prijzen = Vec::new();
+
+    for day_offset in 0..days {
+        let date = start_date
+            .checked_add_days(chrono::Days::new(day_offset as u64))
+            .ok_or_else(|| EnergyZeroError::InvalidDate("Invalid date offset".to_string()))?;
+
+        match fetch_energieprijzen(date).await {
+            Ok(mut prijzen) => {
+                // Adjust hour numbers to be continuous across days
+                for p in &mut prijzen {
+                    p.uur = p.uur + 24 * day_offset;
+                }
+                all_prijzen.extend(prijzen);
+            }
+            Err(EnergyZeroError::ApiError { .. }) => {
+                // If we can't fetch a future day, that's okay - just return what we have
+                tracing::warn!("Failed to fetch prices for day {}: API error, using {} hours total", day_offset, all_prijzen.len());
+                break;
+            }
+            Err(e) => return Err(e),
+        }
+    }
+
+    if all_prijzen.is_empty() {
+        return Err(EnergyZeroError::InsufficientData(0));
+    }
+
+    Ok(all_prijzen)
 }

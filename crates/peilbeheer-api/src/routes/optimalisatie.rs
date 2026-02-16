@@ -12,7 +12,6 @@ use tracing::{info, warn};
 
 use peilbeheer_core::energie::*;
 
-use crate::energyzero_client;
 use crate::error::ApiError;
 use crate::optimization_service::OptimizationService;
 
@@ -98,6 +97,16 @@ pub async fn get_price_forecast(
     }
 }
 
+/// Refresh price forecast (bypasses cache).
+pub async fn refresh_price_forecast(
+    Extension(service): Extension<Arc<OptimizationService>>,
+) -> Result<Json<PriceForecast>, ApiError> {
+    match service.refresh_price_forecast(48).await {
+        Ok(forecast) => Ok(Json(forecast)),
+        Err(e) => Err(ApiError::Hydronet(format!("Failed to refresh forecast: {}", e))),
+    }
+}
+
 /// Run immediate optimization (synchronous).
 pub async fn run_optimalisatie(
     Extension(service): Extension<Arc<OptimizationService>>,
@@ -123,7 +132,6 @@ pub async fn run_optimalisatie(
 
     // If no prices provided, fetch from EnergyZero
     if params.prijzen.is_empty() {
-        // Try to fetch from service or use forecast
         match service.get_price_forecast(24).await {
             Ok(forecast) => {
                 params.prijzen = forecast.hourly_prices.iter()
@@ -133,11 +141,8 @@ pub async fn run_optimalisatie(
                     })
                     .collect();
             }
-            Err(_) => {
-                // Fall back to EnergyZero client
-                params.prijzen = energyzero_client::fetch_energieprijzen_vandaag()
-                    .await
-                    .map_err(|e| ApiError::Hydronet(format!("EnergyZero: {}", e)))?;
+            Err(e) => {
+                return Err(ApiError::Hydronet(format!("EnergyZero: {}", e)));
             }
         }
     }
