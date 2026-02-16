@@ -9,8 +9,10 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+mod arcgis_client;
 mod config;
 mod db;
+mod energyzero_client;
 mod error;
 mod hydronet_client;
 mod routes;
@@ -37,14 +39,104 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!("DuckDB initialized at: {}", config.database_path);
 
+    // Auto-sync gemalen from ArcGIS if cache is empty
+    let registratie_count = db.get_registratie_count().unwrap_or(0);
+    if registratie_count == 0 {
+        tracing::info!("Gemaal cache leeg, ophalen van ArcGIS...");
+        match arcgis_client::fetch_gemalen_geojson().await {
+            Ok(gemalen) => {
+                match db.write_gemaal_registraties(&gemalen) {
+                    Ok(n) => tracing::info!("Auto-sync: {n} gemalen gecached"),
+                    Err(e) => tracing::warn!("Auto-sync schrijven mislukt: {e}"),
+                }
+            }
+            Err(e) => tracing::warn!("Auto-sync ArcGIS ophalen mislukt: {e}"),
+        }
+    } else {
+        tracing::info!("Gemaal cache bevat {registratie_count} registraties");
+    }
+
+    // Auto-sync alle ArcGIS-lagen als asset_registratie leeg is
+    let asset_count = db.get_total_asset_count().unwrap_or(0);
+    if asset_count == 0 {
+        tracing::info!("Asset cache leeg, ophalen van alle ArcGIS-lagen...");
+        for layer in &config.arcgis_layers {
+            match arcgis_client::fetch_layer_assets(
+                &layer.service_name,
+                layer.layer_id,
+                &layer.layer_type,
+            )
+            .await
+            {
+                Ok(assets) => match db.write_asset_registraties(&assets) {
+                    Ok(n) => tracing::info!("Auto-sync {}: {n} assets gecached", layer.layer_type),
+                    Err(e) => tracing::warn!("Auto-sync {} schrijven mislukt: {e}", layer.layer_type),
+                },
+                Err(e) => tracing::warn!("Auto-sync {} ophalen mislukt: {e}", layer.layer_type),
+            }
+        }
+    } else {
+        tracing::info!("Asset cache bevat {asset_count} registraties");
+    }
+
+    // Auto-sync peilgebieden: ophalen van ArcGIS → opslaan als GeoJSON → laden in DuckDB
+    let peilgebied_count = db.get_peilgebied_count().unwrap_or(0);
+    if peilgebied_count == 0 {
+        let geojson_path = std::path::Path::new(&config.peilgebieden_geojson_path);
+
+        // Stap 1: Als het bestand nog niet bestaat, ophalen van ArcGIS
+        if !geojson_path.exists() {
+            tracing::info!(
+                "Peilgebieden GeoJSON niet gevonden, ophalen van ArcGIS ({})...",
+                config.peilgebieden_arcgis_service
+            );
+            match arcgis_client::fetch_peilgebieden_to_file(
+                &config.peilgebieden_arcgis_service,
+                config.peilgebieden_arcgis_layer_id,
+                geojson_path,
+            )
+            .await
+            {
+                Ok(n) => tracing::info!("ArcGIS: {n} peilgebieden opgeslagen naar {}", geojson_path.display()),
+                Err(e) => tracing::warn!("ArcGIS peilgebieden ophalen mislukt: {e}"),
+            }
+        }
+
+        // Stap 2: Laden vanuit GeoJSON-bestand in DuckDB
+        if geojson_path.exists() {
+            tracing::info!(
+                "Peilgebieden laden vanuit {} naar DuckDB...",
+                config.peilgebieden_geojson_path
+            );
+            match db.load_peilgebieden_from_geojson(&config.peilgebieden_geojson_path) {
+                Ok(n) => tracing::info!("{n} peilgebieden geladen in DuckDB"),
+                Err(e) => tracing::warn!("Peilgebieden laden in DuckDB mislukt: {e}"),
+            }
+        } else {
+            tracing::warn!("Geen peilgebieden GeoJSON beschikbaar — kaart zal geen polygonen tonen");
+        }
+    } else {
+        tracing::info!("Peilgebied tabel bevat {peilgebied_count} records");
+    }
+
     // Build API router
     let api = Router::new()
         .route("/health", get(routes::health::health_check))
         .route("/gemalen", get(routes::gemalen::list_gemalen))
+        .route("/gemalen/geojson", get(routes::gemalen::get_geojson))
+        .route("/gemalen/sync", post(routes::gemalen::sync_gemalen))
         .route("/gemalen/{code}", get(routes::gemalen::get_gemaal))
         .route("/status", get(routes::status::get_status_summary))
         .route("/status/generate", post(routes::status::generate_status))
-        .route("/simulatie", post(routes::simulatie::run_simulatie));
+        .route("/simulatie", post(routes::simulatie::run_simulatie))
+        .route("/assets/layers", get(routes::assets::list_layers))
+        .route("/assets/geojson", get(routes::assets::get_assets_geojson))
+        .route("/assets/sync", post(routes::assets::sync_assets))
+        .route("/peilgebieden/geojson", get(routes::peilgebieden::get_peilgebieden_geojson))
+        .route("/peilgebieden/mapping", get(routes::peilgebieden::get_peilgebied_mapping))
+        .route("/peilgebieden/sync", post(routes::peilgebieden::sync_peilgebieden))
+        .route("/energieprijzen", get(routes::optimalisatie::get_energieprijzen))
+        .route("/optimalisatie", post(routes::optimalisatie::run_optimalisatie));
 
     // Combine API with static file serving
     let app = Router::new()

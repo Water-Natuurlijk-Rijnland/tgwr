@@ -35,7 +35,7 @@ pub struct HydronetResponse {
     pub series: Vec<HydronetSeries>,
 }
 
-/// Gemaal code met optionele metadata uit GeoJSON.
+/// Gemaal code met metadata uit ArcGIS GeoJSON.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GeoJsonGemaal {
     pub code: String,
@@ -45,4 +45,14 @@ pub struct GeoJsonGemaal {
     pub lat: Option<f64>,
     #[serde(default)]
     pub lon: Option<f64>,
+    #[serde(default)]
+    pub capaciteit: Option<f64>,
+    #[serde(default)]
+    pub functie: Option<String>,
+    #[serde(default)]
+    pub soort: Option<String>,
+    #[serde(default)]
+    pub plaats: Option<String>,
+    #[serde(default)]
+    pub gemeente: Option<String>,
 }

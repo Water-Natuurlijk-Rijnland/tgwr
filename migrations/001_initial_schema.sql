@@ -18,4 +18,18 @@ CREATE TABLE IF NOT EXISTS gemaal_debiet_per_uur (
     avg_debiet DOUBLE DEFAULT 0.0,
     n_metingen INTEGER DEFAULT 0,
     PRIMARY KEY (gemaal_code, hour_utc)
+);
+
+-- Gemaal registratie (cached van ArcGIS GeoJSON)
+CREATE TABLE IF NOT EXISTS gemaal_registratie (
+    code VARCHAR PRIMARY KEY,
+    naam VARCHAR,
+    latitude DOUBLE,
+    longitude DOUBLE,
+    capaciteit DOUBLE,
+    functie VARCHAR,
+    soort VARCHAR,
+    plaats VARCHAR,
+    gemeente VARCHAR,
+    fetched_at TIMESTAMP NOT NULL
 )

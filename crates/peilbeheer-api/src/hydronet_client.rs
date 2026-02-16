@@ -86,6 +86,11 @@ impl HydronetClient {
                     naam: attrs["NAAM"].as_str().map(String::from),
                     lat: attrs["LAT"].as_f64(),
                     lon: attrs["LON"].as_f64(),
+                    capaciteit: None,
+                    functie: None,
+                    soort: None,
+                    plaats: None,
+                    gemeente: None,
                 });
             }
         }
@@ -108,7 +113,12 @@ fn parse_json_response(
                 .unwrap_or(&vec![])
                 .iter()
                 .filter_map(|point| {
-                    let timestamp_ms = point["x"].as_i64().or(point["timestamp_ms"].as_i64())?;
+                    // Timestamps can be floats (1769434071000.0) or ints
+                    let timestamp_ms = point["x"]
+                        .as_i64()
+                        .or_else(|| point["x"].as_f64().map(|f| f as i64))
+                        .or_else(|| point["timestamp_ms"].as_i64())
+                        .or_else(|| point["timestamp_ms"].as_f64().map(|f| f as i64))?;
                     let value = point["y"].as_f64().or(point["value"].as_f64())?;
 
                     let status = if value > 0.001 {
@@ -128,7 +138,11 @@ fn parse_json_response(
                 .collect();
 
             HydronetSeries {
-                name: s["name"].as_str().unwrap_or("").to_string(),
+                name: s["name"]
+                    .as_str()
+                    .or(s["id"].as_str())
+                    .unwrap_or("")
+                    .to_string(),
                 r#type: s["type"].as_str().unwrap_or("line").to_string(),
                 color: s["color"].as_str().unwrap_or("").to_string(),
                 data,

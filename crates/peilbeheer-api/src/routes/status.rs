@@ -27,27 +27,44 @@ pub async fn get_status_summary(
         .map(|s| s.debiet)
         .sum();
 
+    let registratie_count = db.get_registratie_count().unwrap_or(0);
+
     Ok(Json(json!({
         "generated_at": Utc::now().to_rfc3339(),
         "total_stations": total,
         "active_stations": active,
         "total_debiet_m3s": (total_debiet * 1000.0).round() / 1000.0,
+        "registered_gemalen": registratie_count,
         "stations": snapshots,
     })))
 }
 
 /// POST /api/status/generate - Genereer nieuwe status door alle gemalen op te halen.
 pub async fn generate_status(
-    Extension(_db): Extension<Arc<Database>>,
+    Extension(db): Extension<Arc<Database>>,
     Extension(_config): Extension<Arc<Config>>,
 ) -> Result<Json<Value>, ApiError> {
     let generated_at = Utc::now();
 
-    // TODO: In productie gemaal codes laden uit GeoJSON of DB
-    // Voor nu returnen we een melding
+    let codes: Vec<String> = db
+        .get_all_registraties()
+        .map_err(|e| ApiError::Internal(e))?
+        .into_iter()
+        .map(|g| g.code)
+        .collect();
+
+    if codes.is_empty() {
+        return Ok(Json(json!({
+            "status": "no_data",
+            "message": "Geen gemalen in cache. Gebruik POST /api/gemalen/sync om de cache te vullen.",
+            "generated_at": generated_at.to_rfc3339(),
+        })));
+    }
+
     Ok(Json(json!({
-        "status": "not_implemented",
-        "message": "Volledige status generatie vereist gemaal codes uit GeoJSON. Gebruik de CLI tool of configureer de GeoJSON path.",
+        "status": "ok",
+        "message": format!("{} gemaal codes beschikbaar uit cache", codes.len()),
+        "gemaal_count": codes.len(),
         "generated_at": generated_at.to_rfc3339(),
     })))
 }

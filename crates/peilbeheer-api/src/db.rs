@@ -1,10 +1,14 @@
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Mutex;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
 use duckdb::{params, Connection};
 
+use peilbeheer_core::asset::AssetRegistratie;
 use peilbeheer_core::gemaal::{GemaalSnapshot, GemaalStatus, GemaalTrends};
+use peilbeheer_core::hydronet::GeoJsonGemaal;
+use peilbeheer_core::peilgebied::PeilgebiedInfo;
 
 #[allow(dead_code)]
 fn datetime_to_string(dt: &DateTime<Utc>) -> String {
@@ -27,6 +31,7 @@ fn parse_optional_datetime(s: Option<String>) -> Option<DateTime<Utc>> {
 /// Database wrapper met thread-safe connection.
 pub struct Database {
     conn: Mutex<Connection>,
+    cached_peilgebieden_geojson: Mutex<Option<String>>,
 }
 
 impl Database {
@@ -37,29 +42,40 @@ impl Database {
 
         let conn = Connection::open(path)?;
 
+        conn.execute_batch("INSTALL spatial; LOAD spatial;")?;
+        tracing::info!("Spatial extension loaded");
+
         Ok(Self {
             conn: Mutex::new(conn),
+            cached_peilgebieden_geojson: Mutex::new(None),
         })
     }
 
-    /// Initialiseer het database schema vanuit het migratie SQL-bestand.
+    /// Initialiseer het database schema vanuit de migratie SQL-bestanden.
     pub fn initialize_schema(&self) -> anyhow::Result<()> {
         let conn = self.conn.lock().unwrap();
-        let schema = include_str!("../../../migrations/001_initial_schema.sql");
 
-        for statement in schema.split(';') {
-            // Strip comment lines before checking if statement is empty
-            let stmt: String = statement
-                .lines()
-                .filter(|line| !line.trim_start().starts_with("--"))
-                .collect::<Vec<_>>()
-                .join("\n");
-            let stmt = stmt.trim();
-            if !stmt.is_empty() {
-                if let Err(e) = conn.execute(stmt, []) {
-                    let err_str = e.to_string();
-                    if !err_str.contains("already exists") {
-                        tracing::warn!("Schema statement failed: {}", err_str);
+        let migrations = &[
+            include_str!("../../../migrations/001_initial_schema.sql"),
+            include_str!("../../../migrations/002_asset_registratie.sql"),
+            include_str!("../../../migrations/003_peilgebieden.sql"),
+        ];
+
+        for schema in migrations {
+            for statement in schema.split(';') {
+                // Strip comment lines before checking if statement is empty
+                let stmt: String = statement
+                    .lines()
+                    .filter(|line| !line.trim_start().starts_with("--"))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                let stmt = stmt.trim();
+                if !stmt.is_empty() {
+                    if let Err(e) = conn.execute(stmt, []) {
+                        let err_str = e.to_string();
+                        if !err_str.contains("already exists") {
+                            tracing::warn!("Schema statement failed: {}", err_str);
+                        }
                     }
                 }
             }
@@ -251,5 +267,392 @@ impl Database {
             Err(duckdb::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
+    }
+
+    /// Schrijf gemaal registraties (bulk upsert).
+    pub fn write_gemaal_registraties(&self, gemalen: &[GeoJsonGemaal]) -> anyhow::Result<usize> {
+        let conn = self.conn.lock().unwrap();
+        let now = datetime_to_string(&Utc::now());
+        let mut count = 0;
+
+        for g in gemalen {
+            conn.execute(
+                r#"
+                INSERT INTO gemaal_registratie (code, naam, latitude, longitude, capaciteit, functie, soort, plaats, gemeente, fetched_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (code) DO UPDATE SET
+                    naam = excluded.naam,
+                    latitude = excluded.latitude,
+                    longitude = excluded.longitude,
+                    capaciteit = excluded.capaciteit,
+                    functie = excluded.functie,
+                    soort = excluded.soort,
+                    plaats = excluded.plaats,
+                    gemeente = excluded.gemeente,
+                    fetched_at = excluded.fetched_at
+                "#,
+                params![
+                    g.code,
+                    g.naam,
+                    g.lat,
+                    g.lon,
+                    g.capaciteit,
+                    g.functie,
+                    g.soort,
+                    g.plaats,
+                    g.gemeente,
+                    now,
+                ],
+            )?;
+            count += 1;
+        }
+
+        tracing::info!("Gemaal registraties geschreven: {count}");
+        Ok(count)
+    }
+
+    /// Lees alle gemaal registraties.
+    pub fn get_all_registraties(&self) -> anyhow::Result<Vec<GeoJsonGemaal>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT code, naam, latitude, longitude, capaciteit, functie, soort, plaats, gemeente FROM gemaal_registratie ORDER BY code",
+        )?;
+
+        let mut gemalen = Vec::new();
+        let rows = stmt.query_map([], |row| {
+            Ok(GeoJsonGemaal {
+                code: row.get(0)?,
+                naam: row.get(1)?,
+                lat: row.get(2)?,
+                lon: row.get(3)?,
+                capaciteit: row.get(4)?,
+                functie: row.get(5)?,
+                soort: row.get(6)?,
+                plaats: row.get(7)?,
+                gemeente: row.get(8)?,
+            })
+        })?;
+
+        for row in rows {
+            gemalen.push(row?);
+        }
+
+        Ok(gemalen)
+    }
+
+    /// Tel het aantal gemaal registraties.
+    pub fn get_registratie_count(&self) -> anyhow::Result<usize> {
+        let conn = self.conn.lock().unwrap();
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM gemaal_registratie",
+            [],
+            |row| row.get(0),
+        )?;
+        Ok(count as usize)
+    }
+
+    /// Schrijf asset registraties (bulk upsert).
+    pub fn write_asset_registraties(&self, assets: &[AssetRegistratie]) -> anyhow::Result<usize> {
+        let conn = self.conn.lock().unwrap();
+        let now = datetime_to_string(&Utc::now());
+        let mut count = 0;
+
+        for a in assets {
+            let extra = a
+                .extra_properties
+                .as_ref()
+                .map(|v| serde_json::to_string(v).unwrap_or_default());
+
+            conn.execute(
+                r#"
+                INSERT INTO asset_registratie (layer_type, code, naam, latitude, longitude, extra_properties, fetched_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (layer_type, code) DO UPDATE SET
+                    naam = excluded.naam,
+                    latitude = excluded.latitude,
+                    longitude = excluded.longitude,
+                    extra_properties = excluded.extra_properties,
+                    fetched_at = excluded.fetched_at
+                "#,
+                params![a.layer_type, a.code, a.naam, a.lat, a.lon, extra, now],
+            )?;
+            count += 1;
+        }
+
+        tracing::info!("Asset registraties geschreven: {count} ({})", assets.first().map(|a| a.layer_type.as_str()).unwrap_or("-"));
+        Ok(count)
+    }
+
+    /// Lees assets per laagtype.
+    pub fn get_assets_by_layer(&self, layer_type: &str) -> anyhow::Result<Vec<AssetRegistratie>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT layer_type, code, naam, latitude, longitude, extra_properties FROM asset_registratie WHERE layer_type = ? ORDER BY code",
+        )?;
+
+        let mut assets = Vec::new();
+        let rows = stmt.query_map(params![layer_type], |row| {
+            let extra_str: Option<String> = row.get(5)?;
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, Option<String>>(2)?,
+                row.get::<_, Option<f64>>(3)?,
+                row.get::<_, Option<f64>>(4)?,
+                extra_str,
+            ))
+        })?;
+
+        for row in rows {
+            let (layer_type, code, naam, lat, lon, extra_str) = row?;
+            let extra_properties = extra_str.and_then(|s| serde_json::from_str(&s).ok());
+            assets.push(AssetRegistratie {
+                layer_type,
+                code,
+                naam,
+                lat,
+                lon,
+                extra_properties,
+            });
+        }
+
+        Ok(assets)
+    }
+
+    /// Lees alle assets (optioneel gefilterd op meerdere laagtypen).
+    pub fn get_all_assets(&self, layer_types: Option<&[&str]>) -> anyhow::Result<Vec<AssetRegistratie>> {
+        let conn = self.conn.lock().unwrap();
+
+        let (query, filter_types) = match layer_types {
+            Some(types) if !types.is_empty() => {
+                let placeholders: Vec<&str> = types.iter().map(|_| "?").collect();
+                (
+                    format!(
+                        "SELECT layer_type, code, naam, latitude, longitude, extra_properties FROM asset_registratie WHERE layer_type IN ({}) ORDER BY layer_type, code",
+                        placeholders.join(", ")
+                    ),
+                    Some(types),
+                )
+            }
+            _ => (
+                "SELECT layer_type, code, naam, latitude, longitude, extra_properties FROM asset_registratie ORDER BY layer_type, code".to_string(),
+                None,
+            ),
+        };
+
+        let mut stmt = conn.prepare(&query)?;
+        let mut assets = Vec::new();
+
+        let row_mapper = |row: &duckdb::Row| -> duckdb::Result<(String, String, Option<String>, Option<f64>, Option<f64>, Option<String>)> {
+            Ok((
+                row.get(0)?,
+                row.get(1)?,
+                row.get(2)?,
+                row.get(3)?,
+                row.get(4)?,
+                row.get(5)?,
+            ))
+        };
+
+        if let Some(types) = filter_types {
+            let params: Vec<&dyn duckdb::ToSql> = types.iter().map(|t| t as &dyn duckdb::ToSql).collect();
+            let rows = stmt.query_map(params.as_slice(), row_mapper)?;
+            for row in rows {
+                let (layer_type, code, naam, lat, lon, extra_str) = row?;
+                let extra_properties: Option<serde_json::Value> = extra_str.and_then(|s| serde_json::from_str(&s).ok());
+                assets.push(AssetRegistratie { layer_type, code, naam, lat, lon, extra_properties });
+            }
+        } else {
+            let rows = stmt.query_map([], row_mapper)?;
+            for row in rows {
+                let (layer_type, code, naam, lat, lon, extra_str) = row?;
+                let extra_properties: Option<serde_json::Value> = extra_str.and_then(|s| serde_json::from_str(&s).ok());
+                assets.push(AssetRegistratie { layer_type, code, naam, lat, lon, extra_properties });
+            }
+        }
+
+        Ok(assets)
+    }
+
+    /// Tel het totaal aantal asset registraties.
+    pub fn get_total_asset_count(&self) -> anyhow::Result<usize> {
+        let conn = self.conn.lock().unwrap();
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM asset_registratie",
+            [],
+            |row| row.get(0),
+        )?;
+        Ok(count as usize)
+    }
+
+    // ── Peilgebieden ──
+
+    /// Tel het aantal peilgebieden.
+    pub fn get_peilgebied_count(&self) -> anyhow::Result<usize> {
+        let conn = self.conn.lock().unwrap();
+        let count: i64 =
+            conn.query_row("SELECT COUNT(*) FROM peilgebied", [], |row| row.get(0))?;
+        Ok(count as usize)
+    }
+
+    /// Laad peilgebieden vanuit een GeoJSON-bestand via ST_Read.
+    pub fn load_peilgebieden_from_geojson(&self, path: &str) -> anyhow::Result<usize> {
+        let conn = self.conn.lock().unwrap();
+
+        conn.execute(
+            r#"
+            INSERT INTO peilgebied
+            SELECT CODE, NAAM, ZOMERPEIL, WINTERPEIL, VASTPEIL, OPPERVLAKTE,
+                   SOORTAFWATERING, SOORTPEILGEBIED, geom
+            FROM ST_Read(?)
+            "#,
+            params![path],
+        )?;
+
+        let count: i64 =
+            conn.query_row("SELECT COUNT(*) FROM peilgebied", [], |row| row.get(0))?;
+        Ok(count as usize)
+    }
+
+    /// Herlaad peilgebieden: leeg tabel, laad opnieuw vanuit GeoJSON, invalideer cache.
+    pub fn reload_peilgebieden_from_geojson(&self, path: &str) -> anyhow::Result<usize> {
+        {
+            let conn = self.conn.lock().unwrap();
+            conn.execute("DELETE FROM peilgebied", [])?;
+        }
+        let count = self.load_peilgebieden_from_geojson(path)?;
+        // Invalideer de cache zodat het volgende GET verse data teruggeeft
+        let mut cache = self.cached_peilgebieden_geojson.lock().unwrap();
+        *cache = None;
+        Ok(count)
+    }
+
+    /// Alle peilgebieden als GeoJSON FeatureCollection string (cached).
+    pub fn get_all_peilgebieden_geojson(&self) -> anyhow::Result<String> {
+        let mut cache = self.cached_peilgebieden_geojson.lock().unwrap();
+        if let Some(ref cached) = *cache {
+            return Ok(cached.clone());
+        }
+        let geojson = self.build_peilgebieden_geojson()?;
+        *cache = Some(geojson.clone());
+        Ok(geojson)
+    }
+
+    fn build_peilgebieden_geojson(&self) -> anyhow::Result<String> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            r#"
+            SELECT code, naam, zomerpeil, winterpeil, vastpeil, oppervlakte,
+                   soortafwatering, soortpeilgebied, ST_AsGeoJSON(geometry) AS geojson
+            FROM peilgebied
+            ORDER BY code
+            "#,
+        )?;
+
+        let mut features = Vec::new();
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, Option<String>>(1)?,
+                row.get::<_, Option<f64>>(2)?,
+                row.get::<_, Option<f64>>(3)?,
+                row.get::<_, Option<f64>>(4)?,
+                row.get::<_, Option<f64>>(5)?,
+                row.get::<_, Option<String>>(6)?,
+                row.get::<_, Option<String>>(7)?,
+                row.get::<_, String>(8)?,
+            ))
+        })?;
+
+        for row in rows {
+            let (code, naam, zomerpeil, winterpeil, vastpeil, oppervlakte, soortafwatering, soortpeilgebied, geojson) = row?;
+
+            let properties = serde_json::json!({
+                "CODE": code,
+                "NAAM": naam,
+                "ZOMERPEIL": zomerpeil,
+                "WINTERPEIL": winterpeil,
+                "VASTPEIL": vastpeil,
+                "OPPERVLAKTE": oppervlakte,
+                "SOORTAFWATERING": soortafwatering,
+                "SOORTPEILGEBIED": soortpeilgebied,
+            });
+
+            let geometry: serde_json::Value = serde_json::from_str(&geojson)?;
+
+            let feature = serde_json::json!({
+                "type": "Feature",
+                "properties": properties,
+                "geometry": geometry,
+            });
+
+            features.push(feature);
+        }
+
+        let collection = serde_json::json!({
+            "type": "FeatureCollection",
+            "features": features,
+        });
+
+        Ok(serde_json::to_string(&collection)?)
+    }
+
+    /// Zoek peilgebied bij een punt (lon, lat).
+    pub fn find_peilgebied_for_point(
+        &self,
+        lon: f64,
+        lat: f64,
+    ) -> anyhow::Result<Option<PeilgebiedInfo>> {
+        let conn = self.conn.lock().unwrap();
+        let result = conn.query_row(
+            r#"
+            SELECT code, naam, zomerpeil, winterpeil, vastpeil, oppervlakte, soortafwatering
+            FROM peilgebied
+            WHERE ST_Contains(geometry, ST_Point(?, ?))
+            LIMIT 1
+            "#,
+            params![lon, lat],
+            |row| {
+                Ok(PeilgebiedInfo {
+                    code: row.get(0)?,
+                    naam: row.get(1)?,
+                    zomerpeil: row.get(2)?,
+                    winterpeil: row.get(3)?,
+                    vastpeil: row.get(4)?,
+                    oppervlakte: row.get(5)?,
+                    soortafwatering: row.get(6)?,
+                })
+            },
+        );
+
+        match result {
+            Ok(info) => Ok(Some(info)),
+            Err(duckdb::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    /// Bulk koppeling: gemaal_code → peilgebied_code via spatial join.
+    pub fn get_gemaal_peilgebied_mapping(&self) -> anyhow::Result<HashMap<String, String>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            r#"
+            SELECT g.code, p.code
+            FROM gemaal_registratie g, peilgebied p
+            WHERE ST_Contains(p.geometry, ST_Point(g.longitude, g.latitude))
+            "#,
+        )?;
+
+        let mut mapping = HashMap::new();
+        let rows = stmt.query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })?;
+
+        for row in rows {
+            let (gemaal_code, peilgebied_code) = row?;
+            mapping.insert(gemaal_code, peilgebied_code);
+        }
+
+        Ok(mapping)
     }
 }
