@@ -421,7 +421,7 @@ mod tests {
 
     #[test]
     fn test_user_permissions() {
-        let mut user = User {
+        let user = User {
             id: "1".to_string(),
             username: "testuser".to_string(),
             email: "test@example.com".to_string(),
@@ -435,14 +435,14 @@ mod tests {
             is_active: true,
         };
 
-        // Viewer base role doesn't have ScenariosCreate
-        assert!(!user.has_permission(&Permission::ScenariosCreate));
-
-        // But custom_permissions does
+        // Viewer base role doesn't have ScenariosCreate, but custom_permissions does
         assert!(user.has_permission(&Permission::ScenariosCreate));
 
         // Has base viewer permissions
         assert!(user.has_permission(&Permission::ScenariosRead));
+
+        // Doesn't have permissions not in role or custom
+        assert!(!user.has_permission(&Permission::UsersCreate));
     }
 
     #[test]

@@ -1,3 +1,4 @@
+pub mod alert;
 pub mod asset;
 pub mod auth;
 pub mod dhydro;
@@ -36,8 +37,15 @@ pub use scenario::{
 };
 pub use sliding_window::{SlidingWindowProcessor, WindowStats};
 pub use websocket::{
-    AlertSeverity, SubscribeRequest, TimeSeriesPoint as WsTimeSeriesPoint, UnsubscribeRequest,
-    WsMessage,
+    AlertSeverity as WsAlertSeverity, SubscribeRequest, TimeSeriesPoint as WsTimeSeriesPoint,
+    UnsubscribeRequest, WsMessage,
+};
+pub use alert::{
+    AcknowledgeAlertRequest, Alert, AlertCategory, AlertCondition, AlertQuery, AlertRule,
+    AlertSeverity, AlertStats, AlertStatus, AlertValue, AggregationFunction, ComparisonOperator,
+    ConditionLogic, ConditionResult, CreateAlertRuleRequest, EvaluationContext,
+    NotificationChannel, RuleEvaluationResult, RuleId as AlertRuleId, RuleTriggerCount,
+    TimeSeriesValue, UpdateAlertRuleRequest,
 };
 pub use fews::{
     FewsConfig, FewsLocation, FewsModuleInstance, FewsParameter,

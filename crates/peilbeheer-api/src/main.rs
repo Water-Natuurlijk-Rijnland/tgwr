@@ -10,6 +10,7 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+mod alert_service;
 mod arcgis_client;
 mod auth_service;
 mod config;
@@ -22,6 +23,7 @@ mod routes;
 mod scenario_service;
 mod websocket_service;
 
+use alert_service::AlertService;
 use auth_service::AuthService;
 use db::Database;
 use fews_client::{FewsClient, FewsSyncService};
@@ -133,6 +135,8 @@ async fn main() -> anyhow::Result<()> {
     let scenario_service = Arc::new(ScenarioService::new(db_arc.clone()));
     let auth_service = Arc::new(AuthService::with_default_config(db_arc.clone())?);
     let ws_server = Arc::new(WebSocketServer::new());
+    let alert_service = Arc::new(AlertService::new(db_arc.clone(), ws_server.clone()));
+    alert_service.initialize().await?;
 
     // Initialize Fews client (if configured)
     let fews_config = FewsConfig {
@@ -155,6 +159,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Scenario service initialized");
     tracing::info!("Authentication service initialized");
     tracing::info!("WebSocket server initialized (ID: {})", ws_server.server_id());
+    tracing::info!("Alert service initialized");
     tracing::info!("Fews client initialized (filter: {})", fews_config.filter_id);
 
     // Build API router
@@ -206,7 +211,22 @@ async fn main() -> anyhow::Result<()> {
         .route("/fews/sync", post(routes::fews::sync_fews))
         .route("/fews/ping", get(routes::fews::ping_fews))
         .route("/fews/status", get(routes::fews::fews_status))
-        .route("/fews/config", get(routes::fews::get_sync_configs));
+        .route("/fews/config", get(routes::fews::get_sync_configs))
+        // Alert rules routes
+        .route("/alerts/rules", get(routes::alerts::list_rules))
+        .route("/alerts/rules", post(routes::alerts::create_rule))
+        .route("/alerts/rules/categories", get(routes::alerts::get_categories))
+        .route("/alerts/rules/operators", get(routes::alerts::get_operators))
+        .route("/alerts/rules/{id}", get(routes::alerts::get_rule))
+        .route("/alerts/rules/{id}", put(routes::alerts::update_rule))
+        .route("/alerts/rules/{id}", delete(routes::alerts::delete_rule))
+        .route("/alerts/rules/evaluate", post(routes::alerts::evaluate_rules))
+        // Alert instances routes
+        .route("/alerts", get(routes::alerts::list_alerts))
+        .route("/alerts/stats", get(routes::alerts::get_alert_stats))
+        .route("/alerts/{id}", get(routes::alerts::get_alert))
+        .route("/alerts/{id}/acknowledge", post(routes::alerts::acknowledge_alert))
+        .route("/alerts/{id}/resolve", post(routes::alerts::resolve_alert));
 
     // Combine API with static file serving
     let app = Router::new()
@@ -224,7 +244,8 @@ async fn main() -> anyhow::Result<()> {
         .layer(Extension(auth_service))
         .layer(Extension(ws_server))
         .layer(Extension(fews_client))
-        .layer(Extension(fews_sync_service));
+        .layer(Extension(fews_sync_service))
+        .layer(Extension(alert_service));
 
     // Start server
     let addr = format!("{}:{}", config.host, config.port);

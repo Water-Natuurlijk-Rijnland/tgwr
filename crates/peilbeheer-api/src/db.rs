@@ -59,6 +59,10 @@ impl Database {
             include_str!("../../../migrations/001_initial_schema.sql"),
             include_str!("../../../migrations/002_asset_registratie.sql"),
             include_str!("../../../migrations/003_peilgebieden.sql"),
+            include_str!("../../../migrations/004_scenarios.sql"),
+            include_str!("../../../migrations/005_scenario_results.sql"),
+            include_str!("../../../migrations/006_users.sql"),
+            include_str!("../../../migrations/007_alerts.sql"),
         ];
 
         for schema in migrations {
