@@ -5,6 +5,7 @@ members = [
     "crates/peilbeheer-api",
     "crates/peilbeheer-simulatie",
     "crates/peilbeheer-frontend",
+    "crates/peilbeheer-documenten",
 ]
 
 [workspace.package]
@@ -54,6 +55,7 @@ urlencoding = "2.1"
 # Internal crates
 peilbeheer-core = { path = "crates/peilbeheer-core" }
 peilbeheer-simulatie = { path = "crates/peilbeheer-simulatie" }
+peilbeheer-documenten = { path = "crates/peilbeheer-documenten" }
 
 [profile.release]
 lto = true

@@ -1,0 +1,23 @@
+[package]
+name = "peilbeheer-documenten"
+version.workspace = true
+edition = "2024"
+description = "PDF document parsing en extractie voor Peilbeheer HHVR"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+
+# PDF parsing met OCR
+kreuzberg = { version = "4", features = ["pdf", "ocr"] }
+
+# Optioneel: voor tekst extractie zonder OCR
+pdf-extract = "0.7"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
