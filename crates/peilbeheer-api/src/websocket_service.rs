@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};
 use uuid::Uuid;
 
-use peilbeheer_core::{AlertSeverity, WsMessage};
+use peilbeheer_core::{alert::AlertSeverity, WsAlertSeverity, WsMessage};
 
 /// Maximum WebSocket message size (16MB)
 const MAX_MESSAGE_SIZE: usize = 16 * 1024 * 1024;
@@ -148,7 +148,13 @@ impl WebSocketServer {
         title: String,
         message: String,
     ) {
-        self.broadcast(WsMessage::alert(id, severity, title, message)).await;
+        let ws_severity = match severity {
+            AlertSeverity::Info => WsAlertSeverity::Info,
+            AlertSeverity::Warning => WsAlertSeverity::Warning,
+            AlertSeverity::Error => WsAlertSeverity::Error,
+            AlertSeverity::Critical => WsAlertSeverity::Critical,
+        };
+        self.broadcast(WsMessage::alert(id, ws_severity, title, message)).await;
     }
 
     /// Broadcast system status.

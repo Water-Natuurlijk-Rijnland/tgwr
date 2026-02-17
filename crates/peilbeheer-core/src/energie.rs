@@ -432,7 +432,7 @@ mod tests {
         assert_eq!(forecast.average_price(), 0.126);
 
         let cheapest = forecast.find_cheapest_hours(2);
-        assert_eq!(cheapest, vec![4, 0]); // Indices sorted by price
+        assert_eq!(cheapest, vec![4, 3]); // Indices of 0.05 and 0.08
     }
 
     #[test]

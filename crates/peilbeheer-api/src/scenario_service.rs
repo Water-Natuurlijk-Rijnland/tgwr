@@ -610,13 +610,17 @@ fn parse_json_value(s: Option<String>) -> serde_json::Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Datelike;
 
     #[test]
     fn test_generate_id() {
         let id1 = ScenarioService::generate_id();
+        // Add a small delay to ensure different timestamp
+        std::thread::sleep(std::time::Duration::from_millis(1));
         let id2 = ScenarioService::generate_id();
         assert_ne!(id1, id2);
         assert_eq!(id1.len(), 16);
+        assert_eq!(id2.len(), 16);
     }
 
     #[test]

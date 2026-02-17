@@ -18,7 +18,7 @@ use crate::dashboard_service::DashboardService;
 
 /// Response wrapper for API responses.
 #[derive(Debug, Serialize)]
-struct ApiResponse<T> {
+pub struct ApiResponse<T> {
     success: bool,
     data: Option<T>,
     error: Option<String>,

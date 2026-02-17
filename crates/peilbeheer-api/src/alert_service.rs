@@ -584,10 +584,10 @@ impl AlertService {
         let (id, rule_id, rule_name, severity_str, title, message, category_str,
             resources_json, status_str, triggered_at_str, acknowledged_at_str,
             acknowledged_by, resolved_at_str) = result.map_err(|e| {
-            if matches!(e, duckdb::Error::QueryReturnedNoRows) {
+            if e.to_string().contains("QueryReturnedNoRows") {
                 AlertServiceError::AlertNotFound(id.to_string()).into()
             } else {
-                e.into()
+                e
             }
         })?;
 
@@ -671,7 +671,8 @@ impl AlertService {
             where_clause, limit, offset
         );
 
-        let rows = self.db.query(&sql, params.iter().map(|p| p.as_ref() as &dyn duckdb::ToSql).collect::<Vec<_>>(), |row| {
+        let param_refs: Vec<&dyn duckdb::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+        let rows = self.db.query(&sql, &param_refs, |row| {
             Ok((
                 row.get::<_, String>(0)?,
                 row.get::<_, String>(1)?,
@@ -797,7 +798,7 @@ impl AlertService {
         for severity in [AlertSeverity::Info, AlertSeverity::Warning, AlertSeverity::Error, AlertSeverity::Critical] {
             let count: i64 = self.db.query_row(
                 "SELECT COUNT(*) FROM alerts WHERE severity = ?",
-                &[severity.as_str()],
+                &[&severity.as_str()],
                 |row| row.get(0),
             ).unwrap_or(0);
             by_severity.insert(severity.as_str().to_string(), count as u64);
@@ -810,8 +811,7 @@ impl AlertService {
             &[],
             |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)),
         )?;
-        for row in category_rows {
-            let (cat, count) = row?;
+        for (cat, count) in category_rows {
             by_category.insert(cat, count as u64);
         }
 
@@ -829,8 +829,7 @@ impl AlertService {
                 row.get::<_, i64>(2)?,
             )),
         )?;
-        for row_result in rule_rows {
-            let (rule_id, rule_name, count) = row_result?;
+        for (rule_id, rule_name, count) in rule_rows {
             top_rules.push(RuleTriggerCount { rule_id, rule_name, count: count as u64 });
         }
 
@@ -940,6 +939,7 @@ fn parse_datetime(s: &str) -> DateTime<Utc> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Duration;
     use peilbeheer_core::alert::*;
 
     #[test]
@@ -962,21 +962,28 @@ mod tests {
             },
         ];
 
-        assert_eq!(
-            aggregate_series(&series, Some(AggregationFunction::Avg)),
-            AlertValue::Number(20.0)
-        );
-        assert_eq!(
-            aggregate_series(&series, Some(AggregationFunction::Max)),
-            AlertValue::Number(30.0)
-        );
-        assert_eq!(
-            aggregate_series(&series, Some(AggregationFunction::Min)),
-            AlertValue::Number(10.0)
-        );
-        assert_eq!(
-            aggregate_series(&series, Some(AggregationFunction::Sum)),
-            AlertValue::Number(60.0)
-        );
+        // Test Avg
+        match aggregate_series(&series, Some(AggregationFunction::Avg)) {
+            AlertValue::Number(n) => assert!((n - 20.0).abs() < 0.01),
+            _ => panic!("Expected Number"),
+        }
+
+        // Test Max
+        match aggregate_series(&series, Some(AggregationFunction::Max)) {
+            AlertValue::Number(n) => assert!((n - 30.0).abs() < 0.01),
+            _ => panic!("Expected Number"),
+        }
+
+        // Test Min
+        match aggregate_series(&series, Some(AggregationFunction::Min)) {
+            AlertValue::Number(n) => assert!((n - 10.0).abs() < 0.01),
+            _ => panic!("Expected Number"),
+        }
+
+        // Test Sum
+        match aggregate_series(&series, Some(AggregationFunction::Sum)) {
+            AlertValue::Number(n) => assert!((n - 60.0).abs() < 0.01),
+            _ => panic!("Expected Number"),
+        }
     }
 }

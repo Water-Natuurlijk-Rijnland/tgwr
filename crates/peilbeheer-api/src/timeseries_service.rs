@@ -178,7 +178,7 @@ impl TimeSeriesService {
         &self,
         query: &TimeSeriesQuery,
     ) -> AnyhowResult<AggregatedSeries> {
-        query.validate()?;
+        query.validate().map_err(|e| anyhow::anyhow!("Invalid query: {}", e))?;
 
         let series_key = query.series_id.key();
 
@@ -264,8 +264,7 @@ impl TimeSeriesService {
         )?;
 
         let mut data = Vec::new();
-        for row in rows {
-            let (ts_str, value, flag) = row?;
+        for (ts_str, value, flag) in rows {
             let timestamp = parse_datetime(&ts_str);
             let flag = flag.unwrap_or(QualityFlag::Good);
 
@@ -365,7 +364,7 @@ impl TimeSeriesService {
                     attributes,
                 }))
             }
-            Err(duckdb::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) if e.to_string().contains("QueryReturnedNoRows") => Ok(None),
             Err(e) => Err(e.into()),
         }
     }
@@ -400,7 +399,7 @@ impl TimeSeriesService {
         let rows = if let Some(st) = source_type {
             self.db.query(
                 &sql,
-                &[st as &dyn duckdb::ToSql],
+                &[&st as &dyn duckdb::ToSql],
                 parse_catalog_row,
             )?
         } else {

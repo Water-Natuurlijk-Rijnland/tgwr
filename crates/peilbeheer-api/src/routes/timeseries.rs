@@ -17,7 +17,7 @@ use crate::timeseries_service::TimeSeriesService;
 
 /// Response wrapper for API responses.
 #[derive(Debug, Serialize)]
-struct ApiResponse<T> {
+pub struct ApiResponse<T> {
     success: bool,
     data: Option<T>,
     error: Option<String>,
@@ -202,7 +202,7 @@ pub async fn write_timeseries(
 pub async fn register_series(
     Extension(service): Extension<Arc<TimeSeriesService>>,
     Json(req): Json<RegisterSeriesRequest>,
-) -> Result<Json<ApiResponse<()>>, Json<ApiResponse<()>>> {
+) -> Result<Json<ApiResponse<serde_json::Value>>, Json<ApiResponse<()>>> {
     let series_id = if let Some(q) = &req.qualifier {
         TimeSeriesId::with_qualifier(&req.location_id, &req.parameter, q)
     } else {
@@ -365,7 +365,7 @@ pub async fn get_aggregation_functions() -> Json<ApiResponse<Vec<FunctionInfo>>>
 }
 
 #[derive(Debug, Serialize)]
-struct LevelInfo {
+pub struct LevelInfo {
     value: String,
     label: String,
     duration_seconds: i64,
@@ -373,7 +373,7 @@ struct LevelInfo {
 }
 
 #[derive(Debug, Serialize)]
-struct FunctionInfo {
+pub struct FunctionInfo {
     value: String,
     label: String,
     description: String,

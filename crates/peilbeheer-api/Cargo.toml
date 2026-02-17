@@ -51,3 +51,4 @@ uuid.workspace = true
 
 # URL encoding
 urlencoding.workspace = true
+serde_urlencoded = "0.7"

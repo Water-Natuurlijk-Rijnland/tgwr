@@ -377,7 +377,7 @@ fn build_alert_query(params: ListAlertsQuery) -> AlertQuery {
             "weather" => Some(AlertCategory::Weather),
             "system_health" => Some(AlertCategory::SystemHealth),
             "simulation" => Some(AlertCategory::Simulation),
-            other => Some(AlertCategory::Custom(other)),
+            other => Some(AlertCategory::Custom(other.to_string())),
         }),
         rule_id: params.rule_id,
         start_time: params.start_time.and_then(|s| parse_datetime_iso(&s)),

@@ -431,7 +431,8 @@ mod tests {
         let forecast = PriceForecast::from_energyzero(prices);
 
         assert_eq!(forecast.hourly_prices.len(), 3);
-        assert_eq!(forecast.average_price(), 0.11666666666666667);
+        // Use approximate comparison for floating point
+        assert!((forecast.average_price() - 0.11666666666666667).abs() < 1e-10);
 
         let cheapest = forecast.find_cheapest_hours(2);
         assert_eq!(cheapest.len(), 2);

@@ -436,7 +436,7 @@ impl DashboardService {
 
     /// Check database health.
     async fn check_database_health(&self) -> HealthStatus {
-        match self.db.query_row("SELECT 1", [], |_| Ok(())) {
+        match self.db.query_row("SELECT 1", &[], |_| Ok(())) {
             Ok(_) => HealthStatus::Healthy,
             Err(_) => HealthStatus::Unhealthy,
         }
