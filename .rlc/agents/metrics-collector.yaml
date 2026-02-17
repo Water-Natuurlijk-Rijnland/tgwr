@@ -1,0 +1,25 @@
+agent:
+  name: metrics-collector
+  enabled: true
+  version: 1.0.0
+environment:
+  compute_platform: paas_vercel
+  cloud_provider: vercel
+  languages:
+  - javascript
+  - rust
+  - dotnet
+collection:
+  interval: 15s
+  sources:
+  - type: prometheus
+    endpoint: /metrics
+  - type: otlp
+    endpoint: :4317
+red_method:
+  enabled: true
+  endpoints:
+  - path: /api/*
+    rate_threshold: 100
+    error_threshold: 0.05
+    duration_threshold: 500ms

@@ -1,0 +1,53 @@
+agent_team:
+  alerters:
+  - alert-router
+  controllers:
+  - auto-remediator
+  core:
+  - incident-commander
+  - auto-remediator
+  - post-mortem-writer
+  monitors:
+  - edge-function-monitor
+  - deployment-monitor
+  - threshold-evaluator
+  observers:
+  - health-checker
+  - metrics-collector
+  optional:
+  - cost-analyzer
+  responders:
+  - recovery-monitor
+  - runbook-executor
+environment:
+  cloud_provider: vercel
+  compute_platform: paas_vercel
+  frameworks: &id001 []
+  languages:
+  - javascript
+  - rust
+  - dotnet
+gates:
+  detection:
+    platform_specific:
+      cloud_provider: vercel
+      compute_platform: paas_vercel
+      frameworks: *id001
+      languages:
+      - javascript
+      - rust
+      - dotnet
+    required_agents:
+    - event-classifier
+  resolution:
+    required_agents:
+    - post-mortem-writer
+  response:
+    required_agents:
+    - auto-remediator
+    - recovery-monitor
+    - runbook-executor
+  triage:
+    required_agents:
+    - incident-commander
+    - triage-analyst

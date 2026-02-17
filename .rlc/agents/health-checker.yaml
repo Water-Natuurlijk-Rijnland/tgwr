@@ -1,0 +1,11 @@
+agent:
+  name: health-checker
+  enabled: true
+  version: 1.0.0
+environment:
+  compute_platform: paas_vercel
+  cloud_provider: vercel
+  languages:
+  - javascript
+  - rust
+  - dotnet

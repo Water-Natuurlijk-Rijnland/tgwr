@@ -1,0 +1,41 @@
+mcp_servers:
+  filesystem:
+    enabled: true
+    config:
+      allowed_paths:
+      - /var/rlc
+      - /var/log
+      read_only_default: true
+  postgres:
+    enabled: true
+    config:
+      connection_string: ${DATABASE_URL}
+      max_connections: 10
+  kubernetes:
+    enabled: true
+    config:
+      kubeconfig: ~/.kube/config
+      allowed_operations:
+      - get_pods
+      - get_deployments
+      - restart_pod
+      - scale_deployment
+      - get_logs
+  fetch:
+    enabled: true
+    config:
+      timeout: 10
+      allowed_domains:
+      - '*.internal'
+      - api.monitoring.com
+  sqlite:
+    enabled: true
+    config:
+      database_path: /var/rlc/state/rlc.db
+  prompt:
+    enabled: true
+    config:
+      templates_path: /etc/rlc/prompts
+bridge:
+  type: nats
+  url: nats://localhost:4222

@@ -1,0 +1,56 @@
+all_options:
+- alerts: Vercel Notifications
+  complexity: High
+  cost: <$20
+  logs: "Vercel Logs \u2192 self-hosted Loki"
+  metrics: Vercel Analytics (free tier)
+  name: Vercel Analytics + Log Drains
+  tier: budget
+  traces: OpenTelemetry (self-instrumented)
+- alerts: Grafana OnCall
+  complexity: Medium
+  cost: $20-60
+  logs: Grafana Cloud Loki (via drain)
+  metrics: Vercel Analytics + Grafana Cloud
+  name: Vercel + Grafana Cloud
+  tier: balanced
+  traces: Grafana Cloud Tempo
+- alerts: Datadog Monitor
+  complexity: Low
+  cost: $75-300
+  logs: Datadog Logs
+  metrics: Datadog + Vercel Analytics
+  name: Vercel + Datadog
+  tier: premium
+  traces: Datadog RUM + APM
+primary_option:
+  alerts:
+    destination: Grafana OnCall
+    integrations:
+    - Vercel edge metrics
+    - Web Vitals
+  best_for:
+  - Production Vercel apps
+  - E-commerce
+  complexity: Medium
+  cons:
+  - Two platforms
+  estimated_cost: $20-60
+  logs:
+    ingestion: OTel instrumentation
+    source: Grafana Cloud Loki (via drain)
+  metrics:
+    ingestion: Log drain
+    source: Vercel Analytics + Grafana Cloud
+  name: Vercel + Grafana Cloud
+  pros:
+  - Excellent edge monitoring
+  - Unified dashboard
+  - Reasonable cost
+  setup_commands:
+  - Configure log drain in Vercel
+  tier: balanced
+  traces:
+    ingestion: Log drain
+    source: Grafana Cloud Tempo
+selected_tier: balanced

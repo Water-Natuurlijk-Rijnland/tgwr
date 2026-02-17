@@ -1,0 +1,24 @@
+agent:
+  name: auto-remediator
+  enabled: true
+  version: 1.0.0
+environment:
+  compute_platform: paas_vercel
+  cloud_provider: vercel
+  languages:
+  - javascript
+  - rust
+  - dotnet
+actions:
+  safe_actions:
+  - restart_pod
+  - clear_cache
+  - scale_up
+  approval_required:
+  - rollback_deployment
+  - modify_database
+  - delete_resources
+safety_checks:
+  require_confirmation: true
+  dry_run: false
+  max_retries: 3

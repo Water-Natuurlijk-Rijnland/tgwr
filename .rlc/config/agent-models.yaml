@@ -1,0 +1,89 @@
+model_backend:
+  provider: ollama
+  base_url: http://localhost:11434
+  default_temperature: 0.3
+  default_max_tokens: 2048
+communication:
+  high_volume:
+    protocol: kafka
+    config:
+      bootstrap_servers: localhost:9092
+  coordination:
+    protocol: nats
+    config:
+      url: nats://localhost:4222
+  orchestration:
+    lead_agent: incident_commander
+    heartbeat_interval: 30s
+tier_recommendations:
+  name: balanced
+  total_vram_required: 16GB
+  total_ram_required: 32GB
+agents:
+  incident_commander:
+    model:
+      primary: mistral:7b-instruct-v0.3-q4_k_m
+      temperature: 0.3
+    mcp_servers:
+    - filesystem
+    - postgres
+    - prompt
+  auto_remediator:
+    model:
+      primary: phi3.5:3.8b-instruct-q4_k_m
+      temperature: 0.2
+    mcp_servers:
+    - kubernetes
+    - fetch
+    - sqlite
+  post_mortem_writer:
+    model:
+      primary: qwen2.5:7b-instruct-q4_k_m
+      temperature: 0.7
+    mcp_servers:
+    - filesystem
+    - postgres
+    - prompt
+  metrics_collector:
+    model:
+      primary: phi3.5:3.8b-instruct-q4_k_m
+      temperature: 0.1
+    mcp_servers:
+    - postgres
+  log_aggregator:
+    model:
+      primary: phi3.5:3.8b-instruct-q4_k_m
+      temperature: 0.3
+    embedding_model: bge-base-en-v1.5
+    mcp_servers:
+    - postgres
+    - filesystem
+  health_checker:
+    model: null
+    checks:
+    - http
+    - tcp
+  anomaly_detector:
+    model:
+      primary: llama3.2:3b-instruct-q4_k_m
+      temperature: 0.2
+    mcp_servers:
+    - postgres
+  alert_router:
+    model:
+      primary: phi3.5:3.8b-instruct-q4_k_m
+      temperature: 0.1
+    mcp_servers: []
+  runbook_executor:
+    model:
+      primary: mistral:7b-instruct-v0.3-q4_k_m
+      temperature: 0.2
+    mcp_servers:
+    - kubernetes
+    - fetch
+  recovery_monitor:
+    model:
+      primary: llama3.2:3b-instruct-q4_k_m
+      temperature: 0.2
+    mcp_servers:
+    - postgres

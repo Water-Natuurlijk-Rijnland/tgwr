@@ -1,0 +1,15 @@
+name: RLC Observability Check
+'on':
+  pull_request: null
+  push:
+    branches:
+    - main
+jobs:
+  verify-observability:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Verify RLC Configuration
+      run: ./.rlc/scripts/verify-config.sh
+    - name: Test Event Ingestion
+      run: ./.rlc/scripts/test-ingestion.sh

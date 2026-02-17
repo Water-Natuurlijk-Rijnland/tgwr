@@ -1,0 +1,34 @@
+agent:
+  name: incident-commander
+  enabled: true
+  version: 1.0.0
+environment:
+  compute_platform: paas_vercel
+  cloud_provider: vercel
+  languages:
+  - javascript
+  - rust
+  - dotnet
+incident_severity_thresholds:
+  auto_declare:
+    SEV0:
+    - system_outage
+    - data_loss
+    SEV1:
+    - service_degradation_high
+    - authentication_failure
+    SEV2:
+    - service_degradation
+    - elevated_error_rate
+escalation:
+  oncall_hours: 24x7
+  escalation_paths:
+    SEV0:
+    - oncall_engineer
+    - tech_lead
+    - engineering_manager
+    SEV1:
+    - oncall_engineer
+    - tech_lead
+    SEV2:
+    - oncall_engineer

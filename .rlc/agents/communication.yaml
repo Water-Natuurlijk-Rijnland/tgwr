@@ -1,0 +1,17 @@
+communication:
+  channels:
+    incident_response:
+      type: topic
+      protocol: nats
+      address: nats://localhost:4222
+    event_correlation:
+      type: stream
+      protocol: nats
+      address: nats://localhost:4222
+    alert_routing:
+      type: queue
+      protocol: nats
+      address: nats://localhost:4222
+  emergency_response:
+    formation: 3-2-3-2
+    timeout: 30s
