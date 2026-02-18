@@ -9,3 +9,5 @@ peilbeheer-core.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 chrono.workspace = true
+plotters = "0.3"
+itertools = "0.13"

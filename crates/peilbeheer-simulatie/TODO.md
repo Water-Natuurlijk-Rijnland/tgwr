@@ -12,13 +12,15 @@
 - [x] Multi-peilgebied netwerksimulatie
 - [x] Verbindingstypes: Gemaal, Overstort, Keerklep, OpenVerbinding
 - [x] Coordinated control strategies
+- [x] Scenario's opslaan/laden (JSON)
+- [x] CSV/JSON export van tijdstappen
+- [x] Grafiek generatie (time series plots)
 
 ---
 
 ## 📋 Openstaand
 
 ### 1. Scenario Management
-- [ ] Scenario's opslaan/laden (JSON/DB)
 - [ ] Scenario vergelijking (before/after, what-if)
 - [ ] Scenario templating
 - [ ] Scenario versiebeheer
@@ -39,8 +41,6 @@
 - [ ] Cross-validation
 
 ### 4. Result Export & Rapportage
-- [ ] CSV/JSON export van tijdstappen
-- [ ] Grafiek generatie (time series plots)
 - [ ] PDF rapportage templates
 - [ ] KPI dashboard data
 - [ ] Excel export met meerdere sheets
