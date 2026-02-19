@@ -3,6 +3,8 @@
 //! These endpoints provide access to DHYdro platform functionality including
 //! model management, time series data, scenario management, and simulation results.
 
+#![allow(dead_code)]
+
 use axum::{
     extract::{Extension, Query, State},
     http::StatusCode,
@@ -72,14 +74,14 @@ pub struct UpdateScenarioRequest {
 
 /// Response wrapper for DHYdro API errors.
 #[derive(Debug, Serialize)]
-struct ErrorResponse {
+pub struct ErrorResponse {
     error: String,
     detail: Option<String>,
 }
 
 /// List all available DHYdro models.
 pub async fn list_models(
-    State(client): State<Arc<DhydroClient>>,
+    State(_client): State<Arc<DhydroClient>>,
 ) -> Result<Json<Vec<DhydroModel>>, ErrorResponse> {
     // Note: We need interior mutability for the client (token refresh)
     // For now, we'll create a new client per request
@@ -92,7 +94,7 @@ pub async fn list_models(
 
 /// List all available DHYdro models (POST endpoint).
 pub async fn list_models_post(
-    Extension(client): Extension<Arc<DhydroClient>>,
+    Extension(_client): Extension<Arc<DhydroClient>>,
 ) -> Result<Json<Vec<DhydroModel>>, ErrorResponse> {
     // We need to get a mutable client - for now clone if needed
     // This is a limitation that will be fixed with proper async locking
@@ -104,8 +106,8 @@ pub async fn list_models_post(
 
 /// Get a specific model by ID.
 pub async fn get_model(
-    State(client): State<Arc<DhydroClient>>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    State(_client): State<Arc<DhydroClient>>,
+    axum::extract::Path(_id): axum::extract::Path<String>,
 ) -> Result<Json<DhydroModel>, ErrorResponse> {
     Err(ErrorResponse {
         error: "Not implemented".to_string(),
@@ -115,7 +117,7 @@ pub async fn get_model(
 
 /// Fetch time series data from DHYdro.
 pub async fn get_time_series(
-    State(client): State<Arc<DhydroClient>>,
+    State(_client): State<Arc<DhydroClient>>,
     Query(params): Query<TimeSeriesRequest>,
 ) -> Result<Json<Vec<TimeSeries>>, ErrorResponse> {
     let start = params.start.and_then(|s| DateTime::parse_from_rfc3339(&s).ok())
@@ -132,7 +134,7 @@ pub async fn get_time_series(
         _ => None,
     };
 
-    let query = TimeSeriesQuery {
+    let _query = TimeSeriesQuery {
         location_id: params.location_id,
         parameter: params.parameter,
         start,
@@ -148,8 +150,8 @@ pub async fn get_time_series(
 
 /// List all scenarios (optionally filtered by model).
 pub async fn list_scenarios(
-    State(client): State<Arc<DhydroClient>>,
-    Query(params): Query<ScenarioListRequest>,
+    State(_client): State<Arc<DhydroClient>>,
+    Query(_params): Query<ScenarioListRequest>,
 ) -> Result<Json<Vec<Scenario>>, ErrorResponse> {
     Err(ErrorResponse {
         error: "Not implemented".to_string(),
@@ -159,8 +161,8 @@ pub async fn list_scenarios(
 
 /// Get a specific scenario by ID.
 pub async fn get_scenario(
-    State(client): State<Arc<DhydroClient>>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    State(_client): State<Arc<DhydroClient>>,
+    axum::extract::Path(_id): axum::extract::Path<String>,
 ) -> Result<Json<Scenario>, ErrorResponse> {
     Err(ErrorResponse {
         error: "Not implemented".to_string(),
@@ -170,7 +172,7 @@ pub async fn get_scenario(
 
 /// Create a new scenario.
 pub async fn create_scenario(
-    State(client): State<Arc<DhydroClient>>,
+    State(_client): State<Arc<DhydroClient>>,
     Json(req): Json<CreateScenarioRequest>,
 ) -> Result<Json<Scenario>, ErrorResponse> {
     let parameters = ScenarioParameters {
@@ -182,7 +184,7 @@ pub async fn create_scenario(
         model_parameters: req.model_parameters.unwrap_or_default(),
     };
 
-    let scenario = Scenario {
+    let _scenario = Scenario {
         id: String::new(), // Will be assigned by DHYdro
         name: req.name,
         description: req.description,
@@ -202,8 +204,8 @@ pub async fn create_scenario(
 
 /// Execute a scenario.
 pub async fn execute_scenario(
-    State(client): State<Arc<DhydroClient>>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    State(_client): State<Arc<DhydroClient>>,
+    axum::extract::Path(_id): axum::extract::Path<String>,
 ) -> Result<Json<ScenarioResult>, ErrorResponse> {
     Err(ErrorResponse {
         error: "Not implemented".to_string(),
@@ -213,8 +215,8 @@ pub async fn execute_scenario(
 
 /// Get scenario execution results.
 pub async fn get_scenario_results(
-    State(client): State<Arc<DhydroClient>>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    State(_client): State<Arc<DhydroClient>>,
+    axum::extract::Path(_id): axum::extract::Path<String>,
 ) -> Result<Json<ScenarioResult>, ErrorResponse> {
     Err(ErrorResponse {
         error: "Not implemented".to_string(),
@@ -224,8 +226,8 @@ pub async fn get_scenario_results(
 
 /// Delete a scenario.
 pub async fn delete_scenario(
-    State(client): State<Arc<DhydroClient>>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    State(_client): State<Arc<DhydroClient>>,
+    axum::extract::Path(_id): axum::extract::Path<String>,
 ) -> Result<StatusCode, ErrorResponse> {
     Err(ErrorResponse {
         error: "Not implemented".to_string(),
@@ -235,11 +237,11 @@ pub async fn delete_scenario(
 
 /// Clone a scenario.
 pub async fn clone_scenario(
-    State(client): State<Arc<DhydroClient>>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    State(_client): State<Arc<DhydroClient>>,
+    axum::extract::Path(_id): axum::extract::Path<String>,
     Json(req): Json<serde_json::Value>,
 ) -> Result<Json<Scenario>, ErrorResponse> {
-    let new_name = req.get("name")
+    let _new_name = req.get("name")
         .and_then(|v| v.as_str())
         .unwrap_or("Cloned Scenario");
 

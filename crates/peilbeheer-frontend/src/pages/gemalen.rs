@@ -19,7 +19,7 @@ struct SelectedPeilgebied {
 
 #[component]
 pub fn Gemalen() -> Element {
-    let peilgebieden_res = use_resource(|| api::fetch_peilgebieden_geojson());
+    let peilgebieden_res = use_resource(api::fetch_peilgebieden_geojson);
     let gemalen_res =
         use_resource(|| async { api::fetch_assets_geojson_raw(Some("gemaal")).await });
 

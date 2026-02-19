@@ -17,6 +17,7 @@ pub struct ArcgisLayerConfig {
 
 /// Server configuratie.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Config {
     pub host: String,
     pub port: u16,
@@ -26,6 +27,7 @@ pub struct Config {
     pub peilgebieden_geojson_path: String,
     pub peilgebieden_arcgis_service: String,
     pub peilgebieden_arcgis_layer_id: u32,
+    #[allow(dead_code)]
     pub dhydro: DhydroConfig,
 }
 

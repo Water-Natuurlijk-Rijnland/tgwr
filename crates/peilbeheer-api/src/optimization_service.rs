@@ -8,7 +8,7 @@
 //! - WebSocket notifications for job completion
 
 use anyhow::Result as AnyhowResult;
-use chrono::{DateTime, Duration, NaiveDate, Timelike, Utc};
+use chrono::{DateTime, Duration, Utc};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
@@ -27,11 +27,14 @@ pub struct OptimizationService {
     jobs: Arc<RwLock<HashMap<String, OptimizationJob>>>,
     job_tx: mpsc::Sender<JobCommand>,
     /// Cached price forecast with timestamp
+    #[allow(clippy::type_complexity)]
     price_cache: Arc<RwLock<Option<(PriceForecast, DateTime<Utc>)>>>,
 }
 
 /// Commands for the job worker.
 #[derive(Debug)]
+#[allow(dead_code)]
+#[allow(clippy::large_enum_variant)]
 enum JobCommand {
     Submit(OptimizationJob),
     Cancel(String),
@@ -99,14 +102,13 @@ impl OptimizationService {
     pub async fn cancel_job(&self, id: &str) -> AnyhowResult<bool> {
         {
             let mut jobs = self.jobs.write().await;
-            if let Some(job) = jobs.get_mut(id) {
-                if !job.is_terminal() {
+            if let Some(job) = jobs.get_mut(id)
+                && !job.is_terminal() {
                     job.status = JobStatus::Cancelled;
                     job.completed_at = Some(Utc::now());
                     self.update_job(job).await?;
                     return Ok(true);
                 }
-            }
         }
         self.job_tx.send(JobCommand::Cancel(id.to_string()))
             .await
@@ -124,10 +126,10 @@ impl OptimizationService {
 
         let yesterday = Utc::now() - Duration::hours(24);
         let completed_24h = job_values.iter()
-            .filter(|j| j.status == JobStatus::Completed && j.completed_at.map_or(false, |t| t > yesterday))
+            .filter(|j| j.status == JobStatus::Completed && j.completed_at.is_some_and(|t| t > yesterday))
             .count() as u32;
         let failed_24h = job_values.iter()
-            .filter(|j| j.status == JobStatus::Failed && j.completed_at.map_or(false, |t| t > yesterday))
+            .filter(|j| j.status == JobStatus::Failed && j.completed_at.is_some_and(|t| t > yesterday))
             .count() as u32;
 
         // Calculate average duration
@@ -162,8 +164,8 @@ impl OptimizationService {
         // Check cache first
         {
             let cache = self.price_cache.read().await;
-            if let Some((forecast, cached_at)) = cache.as_ref() {
-                if now.signed_duration_since(*cached_at) < cache_duration {
+            if let Some((forecast, cached_at)) = cache.as_ref()
+                && now.signed_duration_since(*cached_at) < cache_duration {
                     // Cache is still valid, return cached forecast
                     debug!("Using cached price forecast from {:?}", cached_at);
                     // If we need more hours than cached, we might need to fetch more
@@ -171,7 +173,6 @@ impl OptimizationService {
                         return Ok(forecast.clone());
                     }
                 }
-            }
         }
 
         // Cache miss or expired, fetch from EnergyZero
@@ -310,7 +311,7 @@ impl OptimizationService {
             // Generate default prices if not provided
             (0..24).map(|i| UurPrijs {
                 uur: i as u8,
-                prijs_eur_kwh: 0.15 + if i >= 8 && i < 20 { 0.20 } else { 0.0 },
+                prijs_eur_kwh: 0.15 + if (8..20).contains(&i) { 0.20 } else { 0.0 },
             }).collect()
         } else {
             params.prijzen.clone()
@@ -325,7 +326,7 @@ impl OptimizationService {
                 .map(|p| p.prijs_eur_kwh)
                 .unwrap_or(0.15);
 
-            let pomp_fractie = if uur >= 22 || uur < 6 {
+            let pomp_fractie = if !(6..22).contains(&uur) {
                 // Pump at night (cheaper)
                 0.8
             } else {
@@ -388,7 +389,8 @@ impl OptimizationService {
     }
 
     /// Save job result to database.
-    async fn save_job_result(&self, job: &OptimizationJob, result: Option<&OptimalisatieResultaat>) -> AnyhowResult<()> {
+    #[allow(dead_code)]
+    async fn save_job_result(&self, job: &OptimizationJob, _result: Option<&OptimalisatieResultaat>) -> AnyhowResult<()> {
         // TODO: Implement result persistence
         debug!("Saving result for job {} to database", job.id);
         Ok(())

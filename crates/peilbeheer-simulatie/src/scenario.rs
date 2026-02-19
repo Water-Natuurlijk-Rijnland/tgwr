@@ -41,6 +41,7 @@ pub struct Scenario {
 
 /// Regenscenario definitie.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct Regenscenario {
     /// Regenintensiteit per uur per peilgebied (mm/uur)
     #[serde(default)]
@@ -53,31 +54,20 @@ pub struct Regenscenario {
 /// Type regenscenario.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum RegenscenarioType {
     /// Historische data
     Historisch,
     /// Ontworpen gebeurtenis (design storm)
     Ontworpen,
     /// Synthetisch gegenereerd
+    #[default]
     Synthetisch,
     /// Constante regenval
     Constant,
 }
 
-impl Default for RegenscenarioType {
-    fn default() -> Self {
-        Self::Synthetisch
-    }
-}
 
-impl Default for Regenscenario {
-    fn default() -> Self {
-        Self {
-            regen_per_uur: HashMap::new(),
-            scenario_type: RegenscenarioType::default(),
-        }
-    }
-}
 
 /// Simulatieparameters.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -114,18 +104,15 @@ impl Default for SimulatieParameters {
 /// Type uitstroomstrategy.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum StrategyType {
     /// Simpele strategy: pomp als waterstand > streefpeil
+    #[default]
     Simpel,
     /// Gebalanceerde strategy: verdeel waterlast
     Gebalanceerd { balance_factor: f64 },
 }
 
-impl Default for StrategyType {
-    fn default() -> Self {
-        Self::Simpel
-    }
-}
 
 /// Metagegevens voor een scenario.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -120,6 +120,7 @@ pub struct GemaalKpi {
 
 /// Alert KPIs.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct AlertKpi {
     /// Total active alerts
     pub active_total: u32,
@@ -145,6 +146,7 @@ pub struct AlertKpi {
 
 /// Scenario KPIs.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ScenarioKpi {
     /// Total scenarios
     pub total: u32,
@@ -312,6 +314,7 @@ pub enum TrendDirection {
 
 /// Chart data for widgets.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ChartData {
     pub title: String,
     pub labels: Vec<String>,
@@ -322,19 +325,6 @@ pub struct ChartData {
     pub y_axis_max: Option<f64>,
 }
 
-impl Default for ChartData {
-    fn default() -> Self {
-        Self {
-            title: String::new(),
-            labels: Vec::new(),
-            datasets: Vec::new(),
-            x_axis_label: None,
-            y_axis_label: None,
-            y_axis_min: None,
-            y_axis_max: None,
-        }
-    }
-}
 
 /// Chart dataset.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -641,32 +631,7 @@ impl Default for GemaalKpi {
     }
 }
 
-impl Default for AlertKpi {
-    fn default() -> Self {
-        Self {
-            active_total: 0,
-            by_severity: HashMap::new(),
-            by_category: HashMap::new(),
-            critical: 0,
-            triggered_today: 0,
-            acknowledged_today: 0,
-            avg_resolution_minutes: None,
-        }
-    }
-}
 
-impl Default for ScenarioKpi {
-    fn default() -> Self {
-        Self {
-            total: 0,
-            active: 0,
-            running: 0,
-            completed_today: 0,
-            failed_today: 0,
-            avg_execution_seconds: None,
-        }
-    }
-}
 
 impl Default for SyncKpi {
     fn default() -> Self {

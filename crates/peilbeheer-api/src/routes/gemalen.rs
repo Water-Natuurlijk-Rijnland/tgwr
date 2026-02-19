@@ -18,7 +18,7 @@ pub async fn list_gemalen(
 ) -> Result<Json<Vec<GemaalSnapshot>>, ApiError> {
     let snapshots = db
         .get_all_snapshots()
-        .map_err(|e| ApiError::Internal(e))?;
+        .map_err(ApiError::Internal)?;
 
     Ok(Json(snapshots))
 }
@@ -29,12 +29,12 @@ pub async fn get_geojson(
 ) -> Result<Json<Value>, ApiError> {
     let gemalen = db
         .get_all_registraties()
-        .map_err(|e| ApiError::Internal(e))?;
+        .map_err(ApiError::Internal)?;
 
     let features: Vec<Value> = gemalen
         .iter()
         .filter(|g| g.lat.is_some() && g.lon.is_some())
-        .map(|g| to_geojson_feature(g))
+        .map(to_geojson_feature)
         .collect();
 
     Ok(Json(json!({
@@ -49,11 +49,11 @@ pub async fn sync_gemalen(
 ) -> Result<Json<Value>, ApiError> {
     let gemalen = arcgis_client::fetch_gemalen_geojson()
         .await
-        .map_err(|e| ApiError::Hydronet(e))?;
+        .map_err(ApiError::Hydronet)?;
 
     let count = db
         .write_gemaal_registraties(&gemalen)
-        .map_err(|e| ApiError::Internal(e))?;
+        .map_err(ApiError::Internal)?;
 
     Ok(Json(json!({
         "status": "ok",
@@ -70,7 +70,7 @@ pub async fn get_gemaal(
     // Eerst proberen uit de database
     let snapshot = db
         .get_snapshot(&code)
-        .map_err(|e| ApiError::Internal(e))?;
+        .map_err(ApiError::Internal)?;
 
     // Live data ophalen van Hydronet
     let client = HydronetClient::new(config.hydronet_chart_id.clone());

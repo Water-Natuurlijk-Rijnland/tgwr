@@ -119,6 +119,7 @@ impl AlertSeverity {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "info" => Some(Self::Info),
@@ -571,7 +572,7 @@ impl AlertRule {
             cooldown_seconds: 300, // 5 minutes default
             enabled: true,
             notification_channels: vec![NotificationChannel::WebSocket],
-            title_template: format!("{{category}} Alert: {{rule_name}}"),
+            title_template: "{category} Alert: {rule_name}".to_string(),
             message_template: String::new(),
             metadata: HashMap::new(),
             created_at: now,

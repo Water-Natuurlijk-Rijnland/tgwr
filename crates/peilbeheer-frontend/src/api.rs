@@ -109,6 +109,7 @@ pub struct LiveDataPoint {
 // ── Simulatie types ──
 
 #[derive(Debug, Clone, Serialize)]
+#[allow(dead_code)]
 pub struct SimulatieParams {
     pub start_waterstand: f64,
     pub regen_intensiteit: f64,
@@ -219,6 +220,7 @@ pub async fn fetch_status() -> Result<StatusResponse, String> {
         .map_err(|e| format!("Parse failed: {e}"))
 }
 
+#[allow(dead_code)]
 pub async fn fetch_gemalen() -> Result<Vec<GemaalSnapshot>, String> {
     let url = format!("{}/gemalen", api_base());
     reqwest::get(&url)
@@ -239,6 +241,7 @@ pub async fn fetch_gemaal(code: &str) -> Result<GemaalDetailResponse, String> {
         .map_err(|e| format!("Parse failed: {e}"))
 }
 
+#[allow(dead_code)]
 pub async fn run_simulatie(params: &SimulatieParams) -> Result<SimulatieResponse, String> {
     let client = reqwest::Client::new();
     let url = format!("{}/simulatie", api_base());
@@ -301,6 +304,7 @@ pub async fn fetch_peilgebieden_geojson() -> Result<String, String> {
         .map_err(|e| format!("Read failed: {e}"))
 }
 
+#[allow(dead_code)]
 pub async fn fetch_gemaal_peilgebied_mapping() -> Result<std::collections::HashMap<String, String>, String> {
     let url = format!("{}/peilgebieden/mapping", api_base());
     reqwest::get(&url)

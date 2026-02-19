@@ -45,7 +45,7 @@ pub async fn list_scenarios(
 
     service
         .list_scenarios(params.model_id.as_deref(), status.as_ref(), params.limit)
-        .map(|scenarios| Json(scenarios))
+        .map(Json)
         .map_err(|e| ErrorResponse {
             error: "Failed to list scenarios".to_string(),
             detail: Some(e.to_string()),
@@ -163,7 +163,7 @@ pub async fn get_scenario_results(
 ) -> Result<Json<Vec<StoredScenarioResult>>, ErrorResponse> {
     service
         .get_scenario_results(&id)
-        .map(|results| Json(results))
+        .map(Json)
         .map_err(|e| ErrorResponse {
             error: "Failed to get scenario results".to_string(),
             detail: Some(e.to_string()),

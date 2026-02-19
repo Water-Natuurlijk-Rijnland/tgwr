@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 /// OCR backend opties.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum OcrBackend {
     /// Geen OCR - alleen tekst extractie uit embedded PDF tekst
+    #[default]
     None,
 
     /// Tesseract OCR
@@ -19,11 +21,6 @@ pub enum OcrBackend {
     PaddleOcr,
 }
 
-impl Default for OcrBackend {
-    fn default() -> Self {
-        Self::None
-    }
-}
 
 impl OcrBackend {
     /// Converteer naar kreuzberg backend string.

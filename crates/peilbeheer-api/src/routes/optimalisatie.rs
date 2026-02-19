@@ -8,7 +8,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tracing::{info, warn};
+use tracing::warn;
 
 use peilbeheer_core::energie::*;
 
@@ -149,7 +149,7 @@ pub async fn run_optimalisatie(
 
     // Run optimization
     let result = peilbeheer_simulatie::optimalisatie::optimize_pump_schedule(&params)
-        .map_err(|e| ApiError::Validation(e))?;
+        .map_err(ApiError::Validation)?;
 
     Ok(Json(result))
 }

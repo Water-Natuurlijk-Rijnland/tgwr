@@ -13,11 +13,11 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use peilbeheer_core::{
-    FewsConfig, FewsLocation, FewsModuleInstance, FewsParameter, FewsSyncConfig, FewsSyncRequest,
+    FewsLocation, FewsModuleInstance, FewsParameter, FewsSyncConfig, FewsSyncRequest,
     FewsSyncResult, FewsTimeSeriesQuery, FewsTimeSeriesResponse,
 };
 
-use crate::fews_client::{FewsClient, FewsError, FewsSyncService};
+use crate::fews_client::{FewsClient, FewsSyncService};
 
 /// Query parameters for time series requests.
 #[derive(Debug, Deserialize)]
@@ -64,16 +64,14 @@ pub async fn get_time_series(
         query.start_time = Some(start_time);
         query.end_time = Some(end_time);
     } else {
-        if let Some(start) = &params.start {
-            if let Ok(dt) = DateTime::parse_from_rfc3339(start) {
+        if let Some(start) = &params.start
+            && let Ok(dt) = DateTime::parse_from_rfc3339(start) {
                 query.start_time = Some(dt.with_timezone(&Utc));
             }
-        }
-        if let Some(end) = &params.end {
-            if let Ok(dt) = DateTime::parse_from_rfc3339(end) {
+        if let Some(end) = &params.end
+            && let Ok(dt) = DateTime::parse_from_rfc3339(end) {
                 query.end_time = Some(dt.with_timezone(&Utc));
             }
-        }
     }
 
     if let Some(qualifier) = &params.qualifier {

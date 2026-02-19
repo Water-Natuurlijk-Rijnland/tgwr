@@ -75,14 +75,13 @@ impl Database {
                     .collect::<Vec<_>>()
                     .join("\n");
                 let stmt = stmt.trim();
-                if !stmt.is_empty() {
-                    if let Err(e) = conn.execute(stmt, []) {
+                if !stmt.is_empty()
+                    && let Err(e) = conn.execute(stmt, []) {
                         let err_str = e.to_string();
                         if !err_str.contains("already exists") {
                             tracing::warn!("Schema statement failed: {}", err_str);
                         }
                     }
-                }
             }
         }
 
@@ -448,6 +447,7 @@ impl Database {
         let mut stmt = conn.prepare(&query)?;
         let mut assets = Vec::new();
 
+        #[allow(clippy::type_complexity)]
         let row_mapper = |row: &duckdb::Row| -> duckdb::Result<(String, String, Option<String>, Option<f64>, Option<f64>, Option<String>)> {
             Ok((
                 row.get(0)?,
@@ -603,6 +603,7 @@ impl Database {
     }
 
     /// Zoek peilgebied bij een punt (lon, lat).
+    #[allow(dead_code)]
     pub fn find_peilgebied_for_point(
         &self,
         lon: f64,
@@ -684,7 +685,7 @@ impl Database {
     {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(sql)?;
-        let mut rows = stmt.query_map(params.as_ref(), mapper)?;
+        let rows = stmt.query_map(params.as_ref(), mapper)?;
         let mut results = Vec::new();
         for row in rows {
             results.push(row?);

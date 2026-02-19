@@ -327,11 +327,10 @@ impl DhydroClient {
     /// Ensure we have a valid access token, refreshing if necessary.
     async fn ensure_token(&mut self) -> Result<(), DhydroError> {
         // Check if current token is still valid
-        if let (Some(_token), Some(expires_at)) = (&self.access_token, &self.token_expires_at) {
-            if expires_at > &Utc::now() {
+        if let (Some(_token), Some(expires_at)) = (&self.access_token, &self.token_expires_at)
+            && expires_at > &Utc::now() {
                 return Ok(());
             }
-        }
 
         // Need to fetch a new token
         self.fetch_token().await

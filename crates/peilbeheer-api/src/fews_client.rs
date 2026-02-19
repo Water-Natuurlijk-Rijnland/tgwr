@@ -4,7 +4,7 @@
 //! Delft-FEWS (Flood Early Warning System) through its PI-REST API.
 
 use anyhow::Result as AnyhowResult;
-use chrono::{DateTime, Duration, Utc};
+use chrono::{Duration, Utc};
 use reqwest::Client;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -13,11 +13,12 @@ use tracing::{debug, info, warn};
 
 use peilbeheer_core::{
     FewsConfig, FewsLocation, FewsModuleInstance, FewsParameter, FewsSyncConfig, FewsSyncRequest,
-    FewsSyncResult, FewsTimeSeries, FewsTimeSeriesQuery, FewsTimeSeriesResponse,
+    FewsSyncResult, FewsTimeSeriesQuery, FewsTimeSeriesResponse,
 };
 
 /// Fews client error types.
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum FewsError {
     #[error("HTTP request failed: {0}")]
     HttpError(#[from] reqwest::Error),
@@ -333,13 +334,16 @@ impl FewsClient {
 
 /// Fews sync service for managing periodic data synchronization.
 pub struct FewsSyncService {
+    #[allow(dead_code)]
     client: Arc<FewsClient>,
     config: Vec<FewsSyncConfig>,
 }
 
+#[allow(dead_code)]
 impl FewsSyncService {
     /// Create a new Fews sync service.
-    pub fn new(client: Arc<FewsClient>, config: Vec<FewsSyncConfig>) -> Self {
+    pub fn new(#[allow(dead_code)]
+    client: Arc<FewsClient>, config: Vec<FewsSyncConfig>) -> Self {
         Self { client, config }
     }
 
@@ -363,7 +367,7 @@ impl FewsSyncService {
         let end_time = Utc::now();
         let start_time = end_time - Duration::hours(hours_back);
 
-        let mut request = FewsSyncRequest {
+        let request = FewsSyncRequest {
             start_time,
             end_time,
             location_ids: Some(config.location_mapping.values().cloned().collect()),

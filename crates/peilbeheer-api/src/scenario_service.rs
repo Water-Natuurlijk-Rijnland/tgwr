@@ -3,6 +3,8 @@
 //! This module provides CRUD operations for hydraulic modeling scenarios,
 //! including execution, result storage, and comparison functionality.
 
+#![allow(dead_code)]
+
 use chrono::{DateTime, Utc};
 use serde_json::json;
 use std::sync::Arc;
@@ -139,7 +141,7 @@ impl ScenarioService {
         match result {
             Ok(scenario) => Ok(Some(scenario)),
             Err(e) if e.to_string().contains("QueryReturnedNoRows") => Ok(None),
-            Err(e) => Err(e.into()),
+            Err(e) => Err(e),
         }
     }
 
@@ -161,7 +163,7 @@ impl ScenarioService {
             "#,
         );
 
-        let mut params: Vec<String> = Vec::new();
+        let _params: Vec<String> = Vec::new();
 
         if let Some(mid) = model_id {
             query.push_str(&format!(" AND model_id = '{}'", mid));
@@ -307,7 +309,7 @@ impl ScenarioService {
                 &serde_json::to_string(&source.initial_conditions).unwrap(),
                 &serde_json::to_string(&source.model_parameters).unwrap(),
                 &now_str,
-                &user.unwrap_or(&String::new()),
+                &user.unwrap_or(""),
                 &now_str,
                 &"0",
                 &id,
@@ -580,8 +582,8 @@ impl ScenarioService {
                 &scenario_id.as_bytes(),
                 &now.as_bytes(),
                 &change_type.as_bytes(),
-                &old_json.unwrap_or(String::new()).as_bytes(),
-                &new_json.unwrap_or(String::new()).as_bytes(),
+                &old_json.unwrap_or_default().as_bytes(),
+                &new_json.unwrap_or_default().as_bytes(),
             ],
         )?;
 

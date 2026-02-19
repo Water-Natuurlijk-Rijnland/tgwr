@@ -108,11 +108,10 @@ impl PdfParser {
         if let Some(title) = metadata.title {
             doc.metadata.title = Some(title);
         }
-        if let Some(authors) = metadata.authors {
-            if !authors.is_empty() {
+        if let Some(authors) = metadata.authors
+            && !authors.is_empty() {
                 doc.metadata.author = Some(authors.join(", "));
             }
-        }
 
         // Chunk de tekst
         doc.chunk_text(&super::DocumentConfig::default());

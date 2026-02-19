@@ -357,6 +357,7 @@ impl Default for CsvExport {
 
 /// JSON export van tijdstappen.
 pub struct JsonExport {
+    #[allow(dead_code)]
     opties: ExportOpties,
 }
 
@@ -532,7 +533,7 @@ pub fn bereken_statistieken(
         for (id, status) in &stap.statussen {
             waterstanden
                 .entry(id.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(status.waterstand);
 
             *uitstroom_totalen.entry(id.clone()).or_insert(0.0) += status.uitstroom_debiet;
@@ -565,7 +566,7 @@ pub fn bereken_statistieken(
                 max_waterstand: max,
                 gem_waterstand: gem,
                 totale_uitstroom: _totale_uitstroom,
-                pomp_uren: pomp_uren,
+                pomp_uren,
                 gem_regen,
             },
         );

@@ -14,7 +14,7 @@ pub async fn get_status_summary(
 ) -> Result<Json<Value>, ApiError> {
     let snapshots = db
         .get_all_snapshots()
-        .map_err(|e| ApiError::Internal(e))?;
+        .map_err(ApiError::Internal)?;
 
     let total = snapshots.len();
     let active = snapshots
@@ -48,7 +48,7 @@ pub async fn generate_status(
 
     let codes: Vec<String> = db
         .get_all_registraties()
-        .map_err(|e| ApiError::Internal(e))?
+        .map_err(ApiError::Internal)?
         .into_iter()
         .map(|g| g.code)
         .collect();

@@ -6,6 +6,7 @@ use std::collections::HashMap;
 
 /// Metadata over een geëxtraheerd document.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct DocumentMetadata {
     /// Titel van het document (indien beschikbaar)
     pub title: Option<String>,
@@ -30,19 +31,6 @@ pub struct DocumentMetadata {
     pub extra: HashMap<String, serde_json::Value>,
 }
 
-impl Default for DocumentMetadata {
-    fn default() -> Self {
-        Self {
-            title: None,
-            author: None,
-            creation_date: None,
-            modification_date: None,
-            page_count: None,
-            pdf_version: None,
-            extra: HashMap::new(),
-        }
-    }
-}
 
 /// Een tekst chunk uit een document.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -156,6 +144,7 @@ impl Table {
 
 /// Een enkele cel in een tabel.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct TableCell {
     /// Tekst inhoud van de cel
     pub text: String,
@@ -170,16 +159,6 @@ pub struct TableCell {
     pub merged: bool,
 }
 
-impl Default for TableCell {
-    fn default() -> Self {
-        Self {
-            text: String::new(),
-            row: 0,
-            col: 0,
-            merged: false,
-        }
-    }
-}
 
 /// Bounding box voor positionele informatie.
 #[derive(Debug, Clone, Serialize, Deserialize)]

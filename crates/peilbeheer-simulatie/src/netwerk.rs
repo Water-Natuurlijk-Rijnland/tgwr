@@ -438,7 +438,9 @@ impl NetwerkTopologie {
         }
 
         // Start BFS vanaf het eerste peilgebied
-        let start_id = self.peilgebieden.keys().next().unwrap();
+        let Some(start_id) = self.peilgebieden.keys().next() else {
+            return true;
+        };
         let mut bezocht = HashSet::new();
         let mut queue = vec![start_id.clone()];
 
@@ -565,8 +567,19 @@ impl NetwerkSimulatie {
                 }
                 VerbindingType::Overstort => {
                     // Passieve stroming bij hoogwater boven drempel
-                    let debiet = if waterstand_van > verbinding.overstort_drempel.unwrap() {
-                        let niveauverschil = waterstand_van - waterstand_naar.max(verbinding.overstort_drempel.unwrap());
+                    let Some(drempel) = verbinding.overstort_drempel else {
+                        // Geen drempel ingesteld, geen stroming
+                        stromen.push(VerbindingStroom {
+                            verbinding_id: verbinding.id.clone(),
+                            debiet: 0.0,
+                            richting: StroomRichting::Naar,
+                            benutting: 0.0,
+                            actief: false,
+                        });
+                        continue;
+                    };
+                    let debiet = if waterstand_van > drempel {
+                        let niveauverschil = waterstand_van - waterstand_naar.max(drempel);
                         // Debiet schaalt met niveauverschil (weir flow vereenvoudigd)
                         (niveauverschil.sqrt() * verbinding.capaciteit).min(verbinding.capaciteit)
                     } else {
@@ -654,18 +667,26 @@ impl NetwerkSimulatie {
                     StroomRichting::Naar => {
                         *uitgaand_debiet
                             .get_mut(&verbinding.van_id)
-                            .unwrap() += stroom.debiet;
+                            .ok_or_else(|| NetwerkFout::PeilgebiedNietGevonden {
+                                id: verbinding.van_id.clone(),
+                            })? += stroom.debiet;
                         *inkomend_debiet
                             .get_mut(&verbinding.naar_id)
-                            .unwrap() += stroom.debiet;
+                            .ok_or_else(|| NetwerkFout::PeilgebiedNietGevonden {
+                                id: verbinding.naar_id.clone(),
+                            })? += stroom.debiet;
                     }
                     StroomRichting::Terug => {
                         *inkomend_debiet
                             .get_mut(&verbinding.van_id)
-                            .unwrap() += stroom.debiet;
+                            .ok_or_else(|| NetwerkFout::PeilgebiedNietGevonden {
+                                id: verbinding.van_id.clone(),
+                            })? += stroom.debiet;
                         *uitgaand_debiet
                             .get_mut(&verbinding.naar_id)
-                            .unwrap() += stroom.debiet;
+                            .ok_or_else(|| NetwerkFout::PeilgebiedNietGevonden {
+                                id: verbinding.naar_id.clone(),
+                            })? += stroom.debiet;
                     }
                 }
             }
@@ -675,10 +696,23 @@ impl NetwerkSimulatie {
         let mut statuses = Vec::new();
 
         for (id, config) in &self.topologie.peilgebieden {
-            let huidige_ws = *self.waterstanden.get(id).unwrap();
+            let huidige_ws = *self
+                .waterstanden
+                .get(id)
+                .ok_or_else(|| NetwerkFout::PeilgebiedNietGevonden {
+                    id: id.clone(),
+                })?;
             let regen_intensiteit = regen_per_peilgebied.get(id).copied().unwrap_or(0.0);
-            let inkomend = *inkomend_debiet.get(id).unwrap();
-            let uitgaand = *uitgaand_debiet.get(id).unwrap();
+            let inkomend = *inkomend_debiet
+                .get(id)
+                .ok_or_else(|| NetwerkFout::PeilgebiedNietGevonden {
+                    id: id.clone(),
+                })?;
+            let uitgaand = *uitgaand_debiet
+                .get(id)
+                .ok_or_else(|| NetwerkFout::PeilgebiedNietGevonden {
+                    id: id.clone(),
+                })?;
 
             // Bepaal uitstroom debiet via strategy
             let uitstroom_debiet = uitstroom_strategy.bepaal_uitstroom(

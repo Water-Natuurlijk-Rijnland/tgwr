@@ -305,9 +305,9 @@ fn build_map_js(
 
 #[component]
 pub fn KaartPage() -> Element {
-    let layers_res = use_resource(|| api::fetch_layers());
+    let layers_res = use_resource(api::fetch_layers);
     let assets_res = use_resource(|| async { api::fetch_assets_geojson(None).await });
-    let peilgebieden_res = use_resource(|| api::fetch_peilgebieden_geojson());
+    let peilgebieden_res = use_resource(api::fetch_peilgebieden_geojson);
 
     // Peilgebieden are optional – don't block the map if they fail,
     // but DO wait until the request has completed (success or error)
@@ -687,12 +687,10 @@ fn build_sparkline(points: &[(f64, i64)], width: u32, height: u32) -> String {
         r##"<svg width="100%" height="{height}" viewBox="0 0 {width} {height}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
   <polygon points="{first_x:.1},{bottom:.1} {all_coords} {last_x:.1},{bottom:.1}" fill="rgba(26,82,118,0.12)" stroke="none"/>
   <polyline points="{all_coords}" fill="none" stroke="rgb(26,82,118)" stroke-width="1.5" stroke-linejoin="round"/>
-  <text x="{width}" y="12" text-anchor="end" font-size="10" fill="rgb(100,100,100)">{max_label}</text>
-  <text x="{width}" y="{bottom:.0}" text-anchor="end" font-size="10" fill="rgb(100,100,100)">{min_label}</text>
+  <text x="{width}" y="12" text-anchor="end" font-size="10" fill="rgb(100,100,100)">{max_val:.3}</text>
+  <text x="{width}" y="{bottom:.0}" text-anchor="end" font-size="10" fill="rgb(100,100,100)">{min_val:.3}</text>
 </svg>"##,
         all_coords = coords.join(" "),
-        max_label = format!("{max_val:.3}"),
-        min_label = format!("{min_val:.3}"),
     )
 }
 

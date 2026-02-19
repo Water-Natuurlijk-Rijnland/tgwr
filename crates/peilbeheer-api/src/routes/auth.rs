@@ -7,12 +7,11 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Json, Response},
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::Arc;
 
 use peilbeheer_core::{
-    ChangePasswordRequest, Claims, CreateUserRequest, LoginRequest, LoginResponse,
-    Permission, Role, UpdateUserRequest, User, UserInfo,
+    ChangePasswordRequest, CreateUserRequest, LoginRequest, LoginResponse, UpdateUserRequest, User,
 };
 
 use crate::auth_service::{AuthError, AuthService};
@@ -55,7 +54,7 @@ pub async fn logout() -> Result<StatusCode, ErrorResponse> {
 
 /// Get current user info - simplified version that doesn't require JWT.
 pub async fn get_current_user(
-    Extension(auth): Extension<Arc<AuthService>>,
+    Extension(_auth): Extension<Arc<AuthService>>,
 ) -> Result<Json<serde_json::Value>, ErrorResponse> {
     // For now, return a placeholder
     // TODO: Implement proper JWT extraction

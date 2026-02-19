@@ -70,6 +70,7 @@ impl FewsTimeStep {
 
 /// Time series query parameters.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct FewsTimeSeriesQuery {
     pub location_ids: Option<Vec<String>>,
     pub parameter_ids: Option<Vec<String>>,
@@ -82,21 +83,6 @@ pub struct FewsTimeSeriesQuery {
     pub only_headers: Option<bool>,
 }
 
-impl Default for FewsTimeSeriesQuery {
-    fn default() -> Self {
-        Self {
-            location_ids: None,
-            parameter_ids: None,
-            module_instance_ids: None,
-            start_time: None,
-            end_time: None,
-            qualifier: None,
-            show_enumeration: None,
-            version: None,
-            only_headers: None,
-        }
-    }
-}
 
 /// Fews time series data.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -49,6 +49,7 @@ fn simulate_24h_detailed(
     let mut ws = params.streefpeil;
     let mut cum_kosten = 0.0;
 
+    #[allow(clippy::needless_range_loop)]
     for uur in 0..24_usize {
         let fractie = pompfracties[uur];
         let debiet = fractie * params.max_debiet;
@@ -98,6 +99,7 @@ fn naive_pump_fractions(
     let mut fracties = vec![0.0; 24];
     let mut ws = params.streefpeil;
 
+    #[allow(clippy::needless_range_loop)]
     for uur in 0..24 {
         let regen = *params.regen_per_uur.get(uur).unwrap_or(&0.0);
         let effective_regen = regen / berging;

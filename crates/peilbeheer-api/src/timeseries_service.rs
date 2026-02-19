@@ -7,13 +7,13 @@
 //! - Gap detection and analysis
 
 use anyhow::Result as AnyhowResult;
-use chrono::{DateTime, Duration, TimeZone, Utc};
+use chrono::{DateTime, Duration, Utc};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 use peilbeheer_core::timeseries::*;
-use peilbeheer_core::fews::{FewsTimeSeries as FewsSeries, FewsTimeSeriesPoint as FewsPoint};
+use peilbeheer_core::fews::FewsTimeSeries as FewsSeries;
 
 use crate::db::Database;
 
@@ -33,6 +33,7 @@ impl TimeSeriesService {
     }
 
     /// Set the downsample configuration.
+    #[allow(dead_code)]
     pub fn with_downsample_config(mut self, config: DownsampleConfig) -> Self {
         self.downsample_config = config;
         self
@@ -45,7 +46,7 @@ impl TimeSeriesService {
     ) -> AnyhowResult<()> {
         info!("Registering time series: {}", metadata.id.key());
 
-        let key = metadata.id.key();
+        let _key = metadata.id.key();
         let now = Utc::now();
 
         self.db.execute(
@@ -101,7 +102,7 @@ impl TimeSeriesService {
         self.ensure_catalog_entry(&batch.series_id).await?;
 
         let mut points_written = 0;
-        let mut points_updated = 0;
+        let points_updated = 0;
         let mut points_rejected = 0;
         let mut first_ts: Option<DateTime<Utc>> = None;
         let mut last_ts: Option<DateTime<Utc>> = None;
@@ -202,7 +203,7 @@ impl TimeSeriesService {
         };
 
         // Build query based on aggregation function
-        let (value_col, quality_handling) = match query.function {
+        let (value_col, _quality_handling) = match query.function {
             Some(func) => match func {
                 AggregationFunction::Average => ("avg_value", "AVG"),
                 AggregationFunction::Min => ("min_value", "MIN"),
@@ -276,11 +277,10 @@ impl TimeSeriesService {
         }
 
         // Apply gap filling if requested
-        if let Some(fill_method) = query.fill_gaps {
-            if !data.is_empty() && interval_sec > 0 {
+        if let Some(fill_method) = query.fill_gaps
+            && !data.is_empty() && interval_sec > 0 {
                 data = self.fill_gaps(data, query.start, query.end, interval_sec, fill_method)?;
             }
-        }
 
         let function = query.function.unwrap_or(AggregationFunction::Average);
         let aggregation = query.aggregation.unwrap_or(AggregationLevel::Raw);
@@ -302,7 +302,7 @@ impl TimeSeriesService {
 
     /// Get series metadata from catalog.
     pub async fn get_metadata(&self, id: &TimeSeriesId) -> AnyhowResult<Option<TimeSeriesMetadata>> {
-        let key = id.key();
+        let _key = id.key();
 
         let result = self.db.query_row(
             "SELECT location_id, parameter, qualifier, display_name, description, units,
@@ -340,9 +340,9 @@ impl TimeSeriesService {
         );
 
         match result {
-            Ok((loc, param, qual, name, desc, units, data_type, source, source_type,
+            Ok((_loc, _param, _qual, name, desc, units, data_type, source, source_type,
                 min_val, max_val, retention, created_str, updated_str,
-                first_str, last_str, point_count, attr_str)) =>
+                _first_str, _last_str, _point_count, attr_str)) =>
             {
                 let attributes: HashMap<String, serde_json::Value> = attr_str
                     .and_then(|s| serde_json::from_str(&s).ok())
@@ -365,7 +365,7 @@ impl TimeSeriesService {
                 }))
             }
             Err(e) if e.to_string().contains("QueryReturnedNoRows") => Ok(None),
-            Err(e) => Err(e.into()),
+            Err(e) => Err(e),
         }
     }
 
@@ -375,7 +375,7 @@ impl TimeSeriesService {
         source_type: Option<&str>,
         limit: Option<usize>,
     ) -> AnyhowResult<Vec<TimeSeriesCatalogEntry>> {
-        let sql = if let Some(st) = source_type {
+        let sql = if let Some(_st) = source_type {
             format!(
                 "SELECT location_id, parameter, qualifier, display_name, units, source,
                          first_timestamp, last_timestamp, point_count
@@ -410,6 +410,7 @@ impl TimeSeriesService {
     }
 
     /// Import Fews time series data.
+    #[allow(dead_code)]
     pub async fn import_from_fews(
         &self,
         series: &FewsSeries,
@@ -545,7 +546,7 @@ impl TimeSeriesService {
     /// Fill gaps in time series data.
     fn fill_gaps(
         &self,
-        mut data: Vec<TimeSeriesDataPoint>,
+        data: Vec<TimeSeriesDataPoint>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
         interval_sec: i64,
@@ -605,7 +606,7 @@ impl TimeSeriesService {
             };
 
             result.push(point);
-            current_ts = current_ts + Duration::seconds(interval_sec);
+            current_ts += Duration::seconds(interval_sec);
         }
 
         Ok(result)
@@ -620,7 +621,7 @@ impl TimeSeriesService {
         interval_sec: i64,
     ) -> AnyhowResult<Vec<TimeSeriesDataPoint>> {
         let mut result = Vec::new();
-        let mut valid_points: Vec<_> = data.into_iter()
+        let valid_points: Vec<_> = data.into_iter()
             .filter(|p| p.is_valid())
             .collect();
 
@@ -667,7 +668,7 @@ impl TimeSeriesService {
                 QualityFlag::Interpolated,
             ));
 
-            current_ts = current_ts + Duration::seconds(interval_sec);
+            current_ts += Duration::seconds(interval_sec);
         }
 
         Ok(result)

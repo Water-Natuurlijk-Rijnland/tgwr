@@ -59,11 +59,10 @@ async fn handle_websocket(mut socket: WebSocket, server: Arc<WebSocketServer>) {
     let client_id_send = client_id.clone();
     let send_task = tokio::spawn(async move {
         while let Ok(msg) = rx.recv().await {
-            if let Ok(json) = msg.to_json() {
-                if sender.send(Message::Text(json.into())).await.is_err() {
+            if let Ok(json) = msg.to_json()
+                && sender.send(Message::Text(json.into())).await.is_err() {
                     break;
                 }
-            }
         }
     });
 
@@ -106,7 +105,7 @@ async fn handle_client_message(server: &WebSocketServer, client_id: &str, msg: W
     match msg {
         WsMessage::Ping { .. } => {
             // Respond with pong
-            let pong = WsMessage::pong();
+            let _pong = WsMessage::pong();
             tracing::trace!("Sending pong to {}", client_id);
         }
         WsMessage::Data { payload, .. } => {

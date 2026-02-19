@@ -65,8 +65,10 @@ impl Default for Resolutie {
 
 /// Kleurenschema voor grafieken.
 #[derive(Debug, Clone, Copy)]
+#[derive(Default)]
 pub enum Kleurenschema {
     /// Standaard kleurenpalet
+    #[default]
     Standaard,
     /// Kleurenblind-vriendelijk palet
     Kleurenblind,
@@ -77,6 +79,12 @@ pub enum Kleurenschema {
 }
 
 impl Kleurenschema {
+    /// Kleuren voor peilgebied (met wraparound voor veilige toegang)
+    pub fn kleur_op_index(&self, index: usize) -> plotters::style::RGBColor {
+        let kleuren = self.kleuren();
+        kleuren[index % kleuren.len()]
+    }
+
     /// Kleuren voor peilgebieden (max 8)
     pub fn kleuren(&self) -> Vec<plotters::style::RGBColor> {
         match self {
@@ -128,11 +136,6 @@ impl Kleurenschema {
     }
 }
 
-impl Default for Kleurenschema {
-    fn default() -> Self {
-        Self::Standaard
-    }
-}
 
 /// Fouttype voor visualisatie operaties.
 #[derive(Debug, Clone, PartialEq)]
@@ -244,6 +247,12 @@ impl WaterstandGrafiek {
             reden: e.to_string(),
         })?;
 
+        let max_tijd = resultaat
+            .tijdstappen
+            .last()
+            .map(|t| t.tijd)
+            .unwrap_or(1.0);
+
         let mut chart = ChartBuilder::on(&backend)
             .margin(10u32)
             .caption(
@@ -253,7 +262,7 @@ impl WaterstandGrafiek {
             .x_label_area_size(60u32)
             .y_label_area_size(80u32)
             .build_cartesian_2d(
-                0f64..resultaat.tijdstappen.last().unwrap().tijd,
+                0f64..max_tijd,
                 self.bepaal_y_bereik(resultaat),
             )
             .map_err(|e| VisualisatieFout::OngeldigeData {
@@ -271,10 +280,8 @@ impl WaterstandGrafiek {
             return Err(VisualisatieFout::GeenData);
         };
 
-        let kleuren = self.opties.kleurenschema.kleuren();
-
         for (i, id) in peilgebied_ids.iter().enumerate() {
-            let kleur = kleuren.get(i % kleuren.len()).unwrap();
+            let kleur = self.opties.kleurenschema.kleur_op_index(i);
 
             let data: Vec<(f64, f64)> = resultaat
                 .tijdstappen
@@ -334,6 +341,12 @@ impl WaterstandGrafiek {
             reden: e.to_string(),
         })?;
 
+        let max_tijd = resultaat
+            .tijdstappen
+            .last()
+            .map(|t| t.tijd)
+            .unwrap_or(1.0);
+
         let mut chart = ChartBuilder::on(&backend)
             .margin(10u32)
             .caption(
@@ -343,7 +356,7 @@ impl WaterstandGrafiek {
             .x_label_area_size(60u32)
             .y_label_area_size(80u32)
             .build_cartesian_2d(
-                0f64..resultaat.tijdstappen.last().unwrap().tijd,
+                0f64..max_tijd,
                 self.bepaal_y_bereik(resultaat),
             )
             .map_err(|e| VisualisatieFout::OngeldigeData {
@@ -360,10 +373,8 @@ impl WaterstandGrafiek {
             return Err(VisualisatieFout::GeenData);
         };
 
-        let kleuren = self.opties.kleurenschema.kleuren();
-
         for (i, id) in peilgebied_ids.iter().enumerate() {
-            let kleur = kleuren.get(i % kleuren.len()).unwrap();
+            let kleur = self.opties.kleurenschema.kleur_op_index(i);
 
             let data: Vec<(f64, f64)> = resultaat
                 .tijdstappen
@@ -465,6 +476,11 @@ impl RegenGrafiek {
         })?;
 
         let max_regen = self.bepaal_max_regen(resultaat);
+        let max_tijd = resultaat
+            .tijdstappen
+            .last()
+            .map(|t| t.tijd)
+            .unwrap_or(1.0);
 
         let mut chart = ChartBuilder::on(&backend)
             .margin(10u32)
@@ -475,7 +491,7 @@ impl RegenGrafiek {
             .x_label_area_size(60u32)
             .y_label_area_size(80u32)
             .build_cartesian_2d(
-                0f64..resultaat.tijdstappen.last().unwrap().tijd,
+                0f64..max_tijd,
                 0f64..max_regen * 1.1,
             )
             .map_err(|e| VisualisatieFout::OngeldigeData {
@@ -496,10 +512,8 @@ impl RegenGrafiek {
             return Err(VisualisatieFout::GeenData);
         };
 
-        let kleuren = self.opties.kleurenschema.kleuren();
-
         for (i, id) in peilgebied_ids.iter().enumerate() {
-            let kleur = kleuren.get(i % kleuren.len()).unwrap();
+            let kleur = self.opties.kleurenschema.kleur_op_index(i);
 
             let data: Vec<(f64, f64)> = resultaat
                 .tijdstappen
@@ -595,6 +609,12 @@ impl PompGrafiek {
             reden: e.to_string(),
         })?;
 
+        let max_tijd = resultaat
+            .tijdstappen
+            .last()
+            .map(|t| t.tijd)
+            .unwrap_or(1.0);
+
         let mut chart = ChartBuilder::on(&backend)
             .margin(10u32)
             .caption(
@@ -604,7 +624,7 @@ impl PompGrafiek {
             .x_label_area_size(60u32)
             .y_label_area_size(80u32)
             .build_cartesian_2d(
-                0f64..resultaat.tijdstappen.last().unwrap().tijd,
+                0f64..max_tijd,
                 -0.5f64..2.5,
             )
             .map_err(|e| VisualisatieFout::OngeldigeData {
@@ -630,11 +650,9 @@ impl PompGrafiek {
             return Err(VisualisatieFout::GeenData);
         };
 
-        let kleuren = self.opties.kleurenschema.kleuren();
-
         // Offset elke peilgebied verticaal voor duidelijkheid
         for (i, id) in peilgebied_ids.iter().enumerate() {
-            let kleur = kleuren.get(i % kleuren.len()).unwrap();
+            let kleur = self.opties.kleurenschema.kleur_op_index(i);
             let offset = i as f64 * 3.0;
 
             // Verdeel in segmenten (aan/uit perioden)

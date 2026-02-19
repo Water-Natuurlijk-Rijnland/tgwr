@@ -3,6 +3,8 @@
 //! This module provides WebSocket connection management, message broadcasting,
 //! and client subscription handling for real-time updates.
 
+#![allow(dead_code)]
+
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use tokio::sync::{broadcast, RwLock};

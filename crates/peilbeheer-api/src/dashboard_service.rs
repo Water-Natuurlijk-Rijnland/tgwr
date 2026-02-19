@@ -94,7 +94,7 @@ impl DashboardService {
         // Get gemaal counts from database
         let snapshots = self.db.get_all_snapshots()?;
 
-        let mut total = snapshots.len() as u32;
+        let total = snapshots.len() as u32;
         let mut active = 0;
         let mut inactive = 0;
         let mut error = 0;
@@ -120,11 +120,10 @@ impl DashboardService {
                 }
             }
 
-            if let Some(updated) = snapshot.generated_at {
-                if updated > five_minutes_ago {
+            if let Some(updated) = snapshot.generated_at
+                && updated > five_minutes_ago {
                     recently_updated += 1;
                 }
-            }
         }
 
         let utilization_percent = if total_capacity > 0.0 {
@@ -347,8 +346,8 @@ impl DashboardService {
 
     async fn get_gemalen_status_chart(
         &self,
-        start: DateTime<Utc>,
-        end: DateTime<Utc>,
+        _start: DateTime<Utc>,
+        _end: DateTime<Utc>,
     ) -> AnyhowResult<ChartData> {
         let snapshots = self.db.get_all_snapshots()?;
 
@@ -381,8 +380,8 @@ impl DashboardService {
 
     async fn get_water_levels_chart(
         &self,
-        start: DateTime<Utc>,
-        end: DateTime<Utc>,
+        _start: DateTime<Utc>,
+        _end: DateTime<Utc>,
     ) -> AnyhowResult<ChartData> {
         // TODO: Implement with actual water level data
         Ok(ChartData {

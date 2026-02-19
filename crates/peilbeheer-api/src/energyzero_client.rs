@@ -44,6 +44,7 @@ struct EnergyZeroPriceEntry {
 
 /// Haal de EPEX-spotprijzen op voor vandaag van de EnergyZero API.
 /// Retourneert 24 UurPrijs entries (uur 0..23) met prijs incl. BTW in €/kWh.
+#[allow(dead_code)]
 pub async fn fetch_energieprijzen_vandaag() -> Result<Vec<UurPrijs>, EnergyZeroError> {
     let today = Utc::now().date_naive();
     fetch_energieprijzen(today).await
@@ -113,7 +114,7 @@ pub async fn fetch_energieprijzen_multiple_days(start_date: NaiveDate, days: u8)
             Ok(mut prijzen) => {
                 // Adjust hour numbers to be continuous across days
                 for p in &mut prijzen {
-                    p.uur = p.uur + 24 * day_offset;
+                    p.uur += 24 * day_offset;
                 }
                 all_prijzen.extend(prijzen);
             }

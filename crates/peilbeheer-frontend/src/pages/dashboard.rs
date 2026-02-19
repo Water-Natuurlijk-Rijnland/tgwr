@@ -6,7 +6,7 @@ use crate::Route;
 
 #[component]
 pub fn Dashboard() -> Element {
-    let status = use_resource(|| api::fetch_status());
+    let status = use_resource(api::fetch_status);
 
     match &*status.read() {
         Some(Ok(data)) => rsx! { DashboardContent { data: data.clone() } },

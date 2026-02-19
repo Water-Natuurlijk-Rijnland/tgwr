@@ -24,6 +24,7 @@ use crate::websocket_service::WebSocketServer;
 
 /// Alert service error types.
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum AlertServiceError {
     #[error("Rule not found: {0}")]
     RuleNotFound(String),
@@ -446,8 +447,8 @@ impl AlertService {
 
         // If not found and we have a time window, try time series aggregation
         let actual_value = if actual_value.is_none() {
-            if let Some(ref _window) = condition.time_window {
-                if let Some(series) = context.time_series.get(&condition.field) {
+            if let Some(ref _window) = condition.time_window
+                && let Some(_series) = context.time_series.get(&condition.field) {
                     // Need to own the aggregated value, not reference it
                     return Ok(ConditionResult {
                         field: condition.field.clone(),
@@ -457,7 +458,6 @@ impl AlertService {
                         operator: condition.operator,
                     });
                 }
-            }
             None
         } else {
             actual_value
@@ -549,7 +549,8 @@ impl AlertService {
         );
 
         // Broadcast via WebSocket
-        self.ws_server.broadcast(msg);
+        #[allow(clippy::let_underscore_future)]
+        let _ = self.ws_server.broadcast(msg);
 
         // TODO: Implement other channels (email, webhook)
     }
@@ -853,6 +854,7 @@ impl AlertService {
 }
 
 /// Helper: Aggregate time series values.
+#[allow(dead_code)]
 fn aggregate_series(
     series: &[TimeSeriesValue],
     aggregation: Option<AggregationFunction>,
@@ -940,7 +942,6 @@ fn parse_datetime(s: &str) -> DateTime<Utc> {
 mod tests {
     use super::*;
     use chrono::Duration;
-    use peilbeheer_core::alert::*;
 
     #[test]
     fn test_aggregate_series() {

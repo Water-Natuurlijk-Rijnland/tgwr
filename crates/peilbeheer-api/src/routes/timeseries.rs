@@ -2,6 +2,8 @@
 //!
 //! Endpoints for managing and querying time series data.
 
+#![allow(dead_code)]
+
 use axum::{
     extract::{Extension, Path, Query},
     Json,
@@ -122,23 +124,20 @@ pub async fn query_timeseries(
 
     let mut query = TimeSeriesQuery::new(series_id, start, end);
 
-    if let Some(agg) = &params.aggregation {
-        if let Some(level) = AggregationLevel::from_str(agg) {
+    if let Some(agg) = &params.aggregation
+        && let Some(level) = AggregationLevel::from_str(agg) {
             query.aggregation = Some(level);
         }
-    }
 
-    if let Some(func) = &params.function {
-        if let Some(f) = parse_aggregation_function(func) {
+    if let Some(func) = &params.function
+        && let Some(f) = parse_aggregation_function(func) {
             query.function = Some(f);
         }
-    }
 
-    if let Some(fill) = &params.fill_gaps {
-        if let Some(method) = parse_fill_method(fill) {
+    if let Some(fill) = &params.fill_gaps
+        && let Some(method) = parse_fill_method(fill) {
             query.fill_gaps = Some(method);
         }
-    }
 
     match service.query(&query).await {
         Ok(series) => Ok(Json(ApiResponse::ok(series))),

@@ -48,11 +48,10 @@ impl SlidingWindowProcessor {
     /// Voeg serie data toe (Hydronet formaat met timestamp_ms).
     pub fn add_series_data(&mut self, data: &[(i64, f64)]) {
         for &(timestamp_ms, value) in data {
-            if timestamp_ms > 0 {
-                if let Some(ts) = DateTime::from_timestamp_millis(timestamp_ms) {
+            if timestamp_ms > 0
+                && let Some(ts) = DateTime::from_timestamp_millis(timestamp_ms) {
                     self.add_data_point(ts, value);
                 }
-            }
         }
     }
 

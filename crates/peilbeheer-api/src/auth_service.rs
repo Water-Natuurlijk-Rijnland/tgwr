@@ -5,7 +5,6 @@
 
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
-use serde_json::json;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -43,6 +42,7 @@ impl Default for AuthServiceConfig {
 
 /// Authentication errors.
 #[derive(Debug, Error)]
+#[allow(dead_code)]
 pub enum AuthError {
     #[error("Invalid username or password")]
     InvalidCredentials,
@@ -69,6 +69,7 @@ pub struct AuthService {
     db: Arc<Database>,
     config: AuthServiceConfig,
     encoding_key: EncodingKey,
+    #[allow(dead_code)]
     decoding_key: DecodingKey,
 }
 
@@ -156,6 +157,7 @@ impl AuthService {
     }
 
     /// Verify a JWT token and return the claims.
+    #[allow(dead_code)]
     pub fn verify_token(&self, token: &str) -> Result<Claims, AuthError> {
         let token_data = decode::<Claims>(
             token,
@@ -173,11 +175,13 @@ impl AuthService {
         creator: Option<&str>,
     ) -> Result<User, AuthError> {
         // Check if username already exists
+        #[allow(clippy::redundant_pattern_matching)]
         if let Some(_) = self.get_user_by_username(&req.username)? {
             return Err(AuthError::UserAlreadyExists(req.username.clone()));
         }
 
         // Check if email already exists
+        #[allow(clippy::redundant_pattern_matching)]
         if let Some(_) = self.get_user_by_email(&req.email)? {
             return Err(AuthError::UserAlreadyExists(req.email.clone()));
         }
@@ -357,7 +361,7 @@ impl AuthService {
 
     /// Update a user.
     pub fn update_user(&self, id: &str, req: &UpdateUserRequest) -> Result<User, AuthError> {
-        let user = self.get_user_by_id(id)?
+        let _user = self.get_user_by_id(id)?
             .ok_or_else(|| AuthError::UserNotFound(id.to_string()))?;
 
         let now = Utc::now();
@@ -365,22 +369,22 @@ impl AuthService {
 
         // Build update query dynamically based on provided fields
         let mut updates = Vec::new();
-        if req.email.is_some() {
-            updates.push(format!("email = '{}'", req.email.as_ref().unwrap()));
+        if let Some(email) = &req.email {
+            updates.push(format!("email = '{email}'"));
         }
-        if req.full_name.is_some() {
-            updates.push(format!("full_name = '{}'", req.full_name.as_ref().unwrap()));
+        if let Some(full_name) = &req.full_name {
+            updates.push(format!("full_name = '{full_name}'"));
         }
-        if req.role.is_some() {
-            updates.push(format!("role = '{}'", req.role.as_ref().unwrap()));
+        if let Some(role) = &req.role {
+            updates.push(format!("role = '{role}'"));
         }
-        if req.custom_permissions.is_some() {
-            let perms_json = serde_json::to_string(req.custom_permissions.as_ref().unwrap())
+        if let Some(custom_permissions) = &req.custom_permissions {
+            let perms_json = serde_json::to_string(custom_permissions)
                 .unwrap_or_default();
-            updates.push(format!("custom_permissions = '{}'", perms_json));
+            updates.push(format!("custom_permissions = '{perms_json}'"));
         }
-        if req.is_active.is_some() {
-            updates.push(format!("is_active = {}", if req.is_active.unwrap() { 1 } else { 0 }));
+        if let Some(is_active) = req.is_active {
+            updates.push(format!("is_active = {}", if is_active { 1 } else { 0 }));
         }
 
         updates.push(format!("updated_at = '{}'", now_str));
@@ -439,7 +443,7 @@ impl AuthService {
                 if e.to_string().contains("QueryReturnedNoRows") {
                     AuthError::UserNotFound(id.to_string())
                 } else {
-                    AuthError::DatabaseError(e.into())
+                    AuthError::DatabaseError(e)
                 }
             })
     }
@@ -455,6 +459,7 @@ impl AuthService {
     }
 
     /// Check if a user has specific permissions.
+    #[allow(dead_code)]
     pub fn check_permissions(
         &self,
         user_id: &str,

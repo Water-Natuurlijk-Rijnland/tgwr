@@ -53,7 +53,7 @@ pub async fn get_assets_geojson(
 
     let assets = db
         .get_all_assets(layer_types.as_deref())
-        .map_err(|e| ApiError::Internal(e))?;
+        .map_err(ApiError::Internal)?;
 
     // Build a lookup of layer configs for color/icon
     let layer_map: std::collections::HashMap<&str, &crate::config::ArcgisLayerConfig> = config
@@ -110,7 +110,7 @@ pub async fn sync_assets(
             Ok(assets) => {
                 let count = db
                     .write_asset_registraties(&assets)
-                    .map_err(|e| ApiError::Internal(e))?;
+                    .map_err(ApiError::Internal)?;
                 results.push(json!({
                     "layer_type": layer.layer_type,
                     "synced": count,

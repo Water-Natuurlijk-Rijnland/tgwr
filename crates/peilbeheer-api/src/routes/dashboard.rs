@@ -10,7 +10,6 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::info;
 
 use peilbeheer_core::dashboard::*;
 
@@ -88,7 +87,7 @@ pub async fn get_activity_feed(
     Extension(service): Extension<Arc<DashboardService>>,
     Query(params): Query<ActivityQueryParams>,
 ) -> Result<Json<ApiResponse<ActivityFeedData>>, Json<ApiResponse<()>>> {
-    let mut query = ActivityFeedQuery {
+    let query = ActivityFeedQuery {
         limit: params.limit,
         offset: params.offset,
         activity_type: params.activity_type
@@ -226,7 +225,7 @@ pub async fn get_gemaal_status_widget(
     Extension(service): Extension<Arc<DashboardService>>,
 ) -> Result<Json<ApiResponse<DashboardWidget>>, Json<ApiResponse<()>>> {
     match service.get_gemaal_summary().await {
-        Ok(kpi) => {
+        Ok(_kpi) => {
             let widget = DashboardWidget {
                 id: "gemaal_status".to_string(),
                 widget_type: WidgetType::StatusList,

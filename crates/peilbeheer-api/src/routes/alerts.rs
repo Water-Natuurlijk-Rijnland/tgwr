@@ -3,7 +3,7 @@
 //! Endpoints for managing alert rules and viewing triggered alerts.
 
 use axum::{
-    extract::{Extension, Path, Query, State},
+    extract::{Extension, Path, Query},
     http::StatusCode,
     response::IntoResponse,
     Json,
@@ -11,14 +11,11 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
-use peilbeheer_core::{
-    alert::*,
-    websocket::AlertSeverity as WsAlertSeverity, WsMessage,
-};
+use peilbeheer_core::alert::*;
 
-use crate::alert_service::{AlertService, AlertServiceError};
+use crate::alert_service::AlertService;
 use crate::auth_service::AuthService;
 
 /// Response wrapper for API responses.
@@ -106,21 +103,18 @@ pub async fn list_rules(
             let filtered: Vec<_> = rules
                 .into_iter()
                 .filter(|r| {
-                    if let Some(cat) = &params.category {
-                        if r.category.as_str() != cat {
+                    if let Some(cat) = &params.category
+                        && r.category.as_str() != cat {
                             return false;
                         }
-                    }
-                    if let Some(sev) = &params.severity {
-                        if r.severity.as_str() != sev {
+                    if let Some(sev) = &params.severity
+                        && r.severity.as_str() != sev {
                             return false;
                         }
-                    }
-                    if let Some(enabled) = params.enabled {
-                        if r.enabled != enabled {
+                    if let Some(enabled) = params.enabled
+                        && r.enabled != enabled {
                             return false;
                         }
-                    }
                     true
                 })
                 .collect();
@@ -370,14 +364,14 @@ fn build_alert_query(params: ListAlertsQuery) -> AlertQuery {
             _ => None,
         }),
         severity: params.severity.and_then(|s| AlertSeverity::from_str(&s)),
-        category: params.category.and_then(|s| match s.as_str() {
-            "water_level" => Some(AlertCategory::WaterLevel),
-            "pump_status" => Some(AlertCategory::PumpStatus),
-            "energy_price" => Some(AlertCategory::EnergyPrice),
-            "weather" => Some(AlertCategory::Weather),
-            "system_health" => Some(AlertCategory::SystemHealth),
-            "simulation" => Some(AlertCategory::Simulation),
-            other => Some(AlertCategory::Custom(other.to_string())),
+        category: params.category.map(|s| match s.as_str() {
+            "water_level" => AlertCategory::WaterLevel,
+            "pump_status" => AlertCategory::PumpStatus,
+            "energy_price" => AlertCategory::EnergyPrice,
+            "weather" => AlertCategory::Weather,
+            "system_health" => AlertCategory::SystemHealth,
+            "simulation" => AlertCategory::Simulation,
+            other => AlertCategory::Custom(other.to_string()),
         }),
         rule_id: params.rule_id,
         start_time: params.start_time.and_then(|s| parse_datetime_iso(&s)),
