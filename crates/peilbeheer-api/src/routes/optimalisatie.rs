@@ -123,16 +123,19 @@ pub async fn run_optimalisatie(
             "max_debiet moet groter zijn dan 0".into(),
         ));
     }
-    if params.regen_per_uur.len() != 24 {
+    // Allow any number of hours (1-24) instead of exactly 24
+    if params.regen_per_uur.is_empty() || params.regen_per_uur.len() > 24 {
         return Err(ApiError::Validation(format!(
-            "regen_per_uur moet 24 waarden bevatten, maar bevat {}",
+            "regen_per_uur moet 1-24 waarden bevatten, maar bevat {}",
             params.regen_per_uur.len()
         )));
     }
 
     // If no prices provided, fetch from EnergyZero
     if params.prijzen.is_empty() {
-        match service.get_price_forecast(24).await {
+        // Use the number of rain hours to determine how many prices we need
+        let hours_needed = params.regen_per_uur.len() as u8;
+        match service.get_price_forecast(hours_needed.max(1)).await {
             Ok(forecast) => {
                 params.prijzen = forecast.hourly_prices.iter()
                     .map(|hp| UurPrijs {

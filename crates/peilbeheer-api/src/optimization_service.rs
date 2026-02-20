@@ -314,15 +314,21 @@ impl OptimizationService {
                 prijs_eur_kwh: 0.15 + if (8..20).contains(&i) { 0.20 } else { 0.0 },
             }).collect()
         } else {
-            params.prijzen.clone()
+            // Normalize prices: map them to 0-23 hours based on their index, not the uur field
+            params.prijzen.iter().enumerate().map(|(i, p)| UurPrijs {
+                uur: i as u8,  // Reset to 0-23 based on index
+                prijs_eur_kwh: p.prijs_eur_kwh,
+            }).collect()
         };
 
+        let num_hours = prijzen.len().min(24);
         let mut uren = Vec::new();
         let mut cumulatieve_kosten_optimaal = 0.0;
         let mut cumulatieve_kosten_naief = 0.0;
 
-        for uur in 0..24u8 {
-            let prijs = prijzen.get(uur as usize)
+        for i in 0..num_hours {
+            let uur = i as u8;
+            let prijs = prijzen.get(i)
                 .map(|p| p.prijs_eur_kwh)
                 .unwrap_or(0.15);
 
@@ -343,7 +349,7 @@ impl OptimizationService {
             uren.push(OptimalisatieUurResultaat {
                 uur,
                 prijs_eur_kwh: prijs,
-                regen_mm_uur: params.regen_per_uur.get(uur as usize).copied().unwrap_or(0.0),
+                regen_mm_uur: params.regen_per_uur.get(i).copied().unwrap_or(0.0),
                 pomp_fractie_optimaal: pomp_fractie,
                 pomp_fractie_naief: 0.5,
                 waterstand_eind_optimaal: params.streefpeil,

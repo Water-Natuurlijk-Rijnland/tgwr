@@ -1,12 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 fn api_base() -> String {
-    let origin = web_sys::window()
-        .expect("no window")
-        .location()
-        .origin()
-        .expect("no origin");
-    format!("{origin}/api")
+    // Use localhost with explicit port to match page origin
+    // This avoids mixed origin issues between localhost and 127.0.0.1
+    "http://localhost:3000/api".to_string()
 }
 
 // ── Domain types (match API JSON responses) ──

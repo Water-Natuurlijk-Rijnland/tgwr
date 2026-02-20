@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, Utc};
+use chrono::{NaiveDate, Timelike, Utc};
 use peilbeheer_core::energie::UurPrijs;
 use serde::Deserialize;
 use thiserror::Error;
@@ -50,12 +50,13 @@ pub async fn fetch_energieprijzen_vandaag() -> Result<Vec<UurPrijs>, EnergyZeroE
     fetch_energieprijzen(today).await
 }
 
-/// Haal de EPEX-spotprijzen op voor een specifieke datum.
-pub async fn fetch_energieprijzen(datum: NaiveDate) -> Result<Vec<UurPrijs>, EnergyZeroError> {
+/// Internal helper to fetch prices for a date without padding.
+async fn fetch_energieprijzen_single_day(datum: NaiveDate) -> Result<Vec<UurPrijs>, EnergyZeroError> {
     let from = format!("{}T00:00:00.000Z", datum);
     let till = format!(
         "{}T00:00:00.000Z",
-        datum.succ_opt().ok_or_else(|| EnergyZeroError::InvalidDate("No next day".to_string()))?
+        datum.checked_add_days(chrono::Days::new(1))
+            .ok_or_else(|| EnergyZeroError::InvalidDate("No next day".to_string()))?
     );
 
     let url = format!(
@@ -88,15 +89,49 @@ pub async fn fetch_energieprijzen(datum: NaiveDate) -> Result<Vec<UurPrijs>, Ene
         })
         .collect();
 
-    if prijzen.len() < 24 {
-        return Err(EnergyZeroError::InsufficientData(prijzen.len()));
-    }
-
     tracing::info!(
         "EnergyZero: {} uurprijzen opgehaald voor {}",
         prijzen.len(),
         datum
     );
+
+    Ok(prijzen)
+}
+
+/// Haal de EPEX-spotprijzen op voor een specifieke datum.
+/// Padt aan tot 24 uur door prijzen van de volgende dag te halen indien nodig.
+pub async fn fetch_energieprijzen(datum: NaiveDate) -> Result<Vec<UurPrijs>, EnergyZeroError> {
+    let mut prijzen = fetch_energieprijzen_single_day(datum).await?;
+
+    // If we have less than 24 hours, fetch remaining hours from next day
+    if prijzen.len() < 24 {
+        let remaining = 24 - prijzen.len();
+
+        tracing::warn!(
+            "EnergyZero: only {} hours for {}, fetching {} more from next day",
+            prijzen.len(),
+            datum,
+            remaining
+        );
+
+        // Try to fetch from next day to fill the gap (non-recursive)
+        if let Some(next_date) = datum.checked_add_days(chrono::Days::new(1)) {
+            if let Ok(next_prijzen) = fetch_energieprijzen_single_day(next_date).await {
+                let take_count = remaining.min(next_prijzen.len());
+                for (i, p) in next_prijzen.into_iter().take(take_count).enumerate() {
+                    prijzen.push(UurPrijs {
+                        uur: (prijzen.len() + i) as u8,
+                        prijs_eur_kwh: p.prijs_eur_kwh,
+                    });
+                }
+            }
+        }
+    }
+
+    // If still empty, fail
+    if prijzen.is_empty() {
+        return Err(EnergyZeroError::InsufficientData(0));
+    }
 
     Ok(prijzen)
 }

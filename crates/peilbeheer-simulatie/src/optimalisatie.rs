@@ -155,9 +155,9 @@ pub fn optimize_pump_schedule(
     if params.max_debiet <= 0.0 {
         return Err("Max debiet moet groter zijn dan 0".into());
     }
-    if params.regen_per_uur.len() != 24 {
+    if params.regen_per_uur.is_empty() || params.regen_per_uur.len() > 24 {
         return Err(format!(
-            "regen_per_uur moet 24 waarden bevatten, maar bevat {}",
+            "regen_per_uur moet 1-24 waarden bevatten, maar bevat {}",
             params.regen_per_uur.len()
         ));
     }
