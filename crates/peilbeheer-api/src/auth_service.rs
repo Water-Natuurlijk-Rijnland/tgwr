@@ -335,7 +335,13 @@ impl AuthService {
     }
 
     /// List all users.
+    /// Returns empty vec if the users table doesn't exist yet.
     pub fn list_users(&self) -> Result<Vec<User>, AuthError> {
+        // Check if users table exists first
+        if !self.db.table_exists("users") {
+            return Ok(vec![]);
+        }
+
         let users = self.db.query(
             "SELECT id, username, email, full_name, role, custom_permissions, created_at, created_by, updated_at, last_login, is_active FROM users ORDER BY username",
             &[],

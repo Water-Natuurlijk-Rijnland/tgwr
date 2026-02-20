@@ -161,8 +161,17 @@ async fn main() -> anyhow::Result<()> {
     let fews_sync_service = Arc::new(FewsSyncService::new(fews_client.clone(), vec![]));
 
     // Ensure default admin user exists
-    if auth_service.ensure_default_admin()? {
-        tracing::warn!("Default admin user created - username: admin, password: admin123");
+    // Only do this if users table exists (it's created in migrations)
+    match auth_service.ensure_default_admin() {
+        Ok(true) => {
+            tracing::warn!("Default admin user created - username: admin, password: admin123");
+        }
+        Ok(false) => {
+            // Admin user already exists
+        }
+        Err(e) => {
+            tracing::warn!("Failed to ensure default admin user: {}", e);
+        }
     }
 
     tracing::info!("Scenario service initialized");
@@ -206,11 +215,11 @@ async fn main() -> anyhow::Result<()> {
         .route("/auth/me", get(routes::auth::get_current_user))
         .route("/auth/users", get(routes::auth::list_users))
         .route("/auth/users", post(routes::auth::create_user))
-        .route("/auth/users/:id", get(routes::auth::get_user))
-        .route("/auth/users/:id", post(routes::auth::update_user))
-        .route("/auth/users/:id/delete", post(routes::auth::delete_user))
-        .route("/auth/users/:id/password", post(routes::auth::change_password))
-        .route("/auth/users/:id/permissions", get(routes::auth::get_user_permissions))
+        .route("/auth/users/{id}", get(routes::auth::get_user))
+        .route("/auth/users/{id}", post(routes::auth::update_user))
+        .route("/auth/users/{id}/delete", post(routes::auth::delete_user))
+        .route("/auth/users/{id}/password", post(routes::auth::change_password))
+        .route("/auth/users/{id}/permissions", get(routes::auth::get_user_permissions))
         // Scenario management routes
         .route("/scenarios", get(routes::scenarios::list_scenarios))
         .route("/scenarios", post(routes::scenarios::create_scenario))

@@ -51,6 +51,14 @@ impl Database {
         })
     }
 
+    /// Check if a table exists in the database.
+    pub fn table_exists(&self, table_name: &str) -> bool {
+        let conn = self.conn.lock().unwrap();
+        // Try to query the table - if it fails, it doesn't exist
+        let result = conn.prepare(&format!("SELECT 1 FROM {}", table_name));
+        result.is_ok()
+    }
+
     /// Initialiseer het database schema vanuit de migratie SQL-bestanden.
     pub fn initialize_schema(&self) -> anyhow::Result<()> {
         let conn = self.conn.lock().unwrap();
@@ -345,14 +353,17 @@ impl Database {
     }
 
     /// Tel het aantal gemaal registraties.
+    /// Returns 0 if the table doesn't exist yet.
     pub fn get_registratie_count(&self) -> anyhow::Result<usize> {
         let conn = self.conn.lock().unwrap();
-        let count: i64 = conn.query_row(
+
+        // Try to get count, return 0 if table doesn't exist or query fails
+        let result: Result<i64, _> = conn.query_row(
             "SELECT COUNT(*) FROM gemaal_registratie",
             [],
             |row| row.get(0),
-        )?;
-        Ok(count as usize)
+        );
+        Ok(result.unwrap_or(0) as usize)
     }
 
     /// Schrijf asset registraties (bulk upsert).
@@ -480,14 +491,17 @@ impl Database {
     }
 
     /// Tel het totaal aantal asset registraties.
+    /// Returns 0 if the table doesn't exist yet.
     pub fn get_total_asset_count(&self) -> anyhow::Result<usize> {
         let conn = self.conn.lock().unwrap();
-        let count: i64 = conn.query_row(
+
+        // Try to get count, return 0 if table doesn't exist or query fails
+        let result: Result<i64, _> = conn.query_row(
             "SELECT COUNT(*) FROM asset_registratie",
             [],
             |row| row.get(0),
-        )?;
-        Ok(count as usize)
+        );
+        Ok(result.unwrap_or(0) as usize)
     }
 
     // ── Peilgebieden ──
@@ -495,9 +509,10 @@ impl Database {
     /// Tel het aantal peilgebieden.
     pub fn get_peilgebied_count(&self) -> anyhow::Result<usize> {
         let conn = self.conn.lock().unwrap();
-        let count: i64 =
-            conn.query_row("SELECT COUNT(*) FROM peilgebied", [], |row| row.get(0))?;
-        Ok(count as usize)
+        // Try to get count, return 0 if table doesn't exist or query fails
+        let result: Result<i64, _> =
+            conn.query_row("SELECT COUNT(*) FROM peilgebied", [], |row| row.get(0));
+        Ok(result.unwrap_or(0) as usize)
     }
 
     /// Laad peilgebieden vanuit een GeoJSON-bestand via ST_Read.
